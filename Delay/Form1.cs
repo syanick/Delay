@@ -92,7 +92,7 @@ namespace Delay
 
            
 
-            if ((targetRampedUp && rampingup && curdelay < targetMs)||!quickramp)
+            if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
             {
                 var stretchedbuffer = stretch(e.Buffer, (1.00 + (rampSpeed/100.0)),silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
