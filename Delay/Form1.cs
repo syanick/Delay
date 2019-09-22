@@ -274,6 +274,12 @@ namespace Delay
             //targetMs = output.DesiredLatency;
             rampingdown = true;
             rampingup = false;
+            rampingup = false;
+            quickramp = false;
+            if (output.PlaybackState == PlaybackState.Paused)
+            {
+                output.Play();
+            }
         }
 
         
