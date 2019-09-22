@@ -34,7 +34,7 @@ namespace Delay
         double silenceThreshold;
         bool quickramp = false;
         int realRampSpeed = 0;
-        int realRampFactor = 20; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
+        int realRampFactor = 2; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
         
 
         public Form1()
@@ -60,6 +60,8 @@ namespace Delay
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
             dumpMs = (int)(targetMs / txtDumps.Value);
+            numericUpDown1.Value = realRampFactor / 2;
+
             InitializeAudio();
         }
 
@@ -96,10 +98,10 @@ namespace Delay
 
             if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
             {
-                var stretchedbuffer = stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor)))); //removing this for now ,silenceThreshold);
+                var stretchedbuffer = stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now 
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
-                
-                if((targetMs - (curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor))))) > (realRampSpeed * 20))
+                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                if ((targetMs - (curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor))))) > (realRampSpeed * 20))
                 {
                     if(realRampSpeed < (rampSpeed * realRampFactor))
                         realRampSpeed++;
@@ -129,10 +131,10 @@ namespace Delay
             else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
             {
                 //Ramp down to the target
-                var stretchedbuffer = stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor)))); //removing this for now , silenceThreshold);
+                var stretchedbuffer = stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now , silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
-                
-                if((-1 * curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor)))) < ((realRampSpeed * 20) - 500))
+                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                if ((-1 * curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor)))) < ((realRampSpeed * 20) - output.DesiredLatency))
                 {
                     if(realRampSpeed > (-1 * rampSpeed * realRampFactor))
                         realRampSpeed--;
@@ -156,7 +158,7 @@ namespace Delay
             {
                 buffer.AddSamples(stretch(e.Buffer,1.00),0,e.BytesRecorded);
                 realRampSpeed = 0;
-
+                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 if (curdelay >= targetMs)
                 {
                     rampingup = false;
@@ -179,8 +181,8 @@ namespace Delay
             {
                 output.Play();
             }
-            
 
+            
             
             
         }
@@ -199,7 +201,7 @@ namespace Delay
         {
             if (buffer.BufferedBytes >= 0)
             {
-                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                //curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
             }
             else
             {
@@ -233,7 +235,7 @@ namespace Delay
                     {
                         btnExit.BackColor = Color.Yellow;
                     }
-                    timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (rampSpeed / 100.0)));
+                    timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 else if (rampingup)
@@ -248,10 +250,10 @@ namespace Delay
                     {
                         btnBuild.BackColor = Color.Lime;
                     }
-                    timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (rampSpeed / 100.0)));
+                    timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
-                
+                this.Text = (1.00 + (realRampSpeed / (100.0 * realRampFactor))).ToString();
             }
             else
             {
@@ -376,6 +378,7 @@ namespace Delay
             if (dBFS(avgAudioLevel(inputbytes, waveformat))>silenceThreshold)
             {
                 stretchfactor = 1.00;
+                realRampSpeed = 0;
             }
             int blockalign = input.WaveFormat.BlockAlign;
             int outputblocks = (int)((inputbytes.Length / blockalign) * stretchfactor);
@@ -461,8 +464,8 @@ namespace Delay
             }
             buffer.ClearBuffer();
 
-            
-            
+
+            curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
             if (targetRampedUp && curdelay < targetMs)
             {
                 rampingup = true;
@@ -493,5 +496,9 @@ namespace Delay
             }
         }
 
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            realRampFactor = (int)numericUpDown1.Value * 2;
+        }
     }
 }

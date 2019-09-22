@@ -49,10 +49,13 @@
             this.lblRampTimer = new System.Windows.Forms.Label();
             this.txtThreshold = new System.Windows.Forms.NumericUpDown();
             this.label6 = new System.Windows.Forms.Label();
+            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
+            this.label7 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtThreshold)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.SuspendLayout();
             // 
             // label1
@@ -79,7 +82,7 @@
             0,
             0});
             this.txtTarget.Name = "txtTarget";
-            this.txtTarget.Size = new System.Drawing.Size(120, 20);
+            this.txtTarget.Size = new System.Drawing.Size(75, 20);
             this.txtTarget.TabIndex = 1;
             this.txtTarget.Value = new decimal(new int[] {
             20,
@@ -102,7 +105,7 @@
             0,
             0});
             this.txtSpeed.Name = "txtSpeed";
-            this.txtSpeed.Size = new System.Drawing.Size(120, 20);
+            this.txtSpeed.Size = new System.Drawing.Size(75, 20);
             this.txtSpeed.TabIndex = 2;
             this.txtSpeed.Value = new decimal(new int[] {
             2,
@@ -292,7 +295,7 @@
             0,
             -2147483648});
             this.txtThreshold.Name = "txtThreshold";
-            this.txtThreshold.Size = new System.Drawing.Size(120, 20);
+            this.txtThreshold.Size = new System.Drawing.Size(75, 20);
             this.txtThreshold.TabIndex = 19;
             this.txtThreshold.Value = new decimal(new int[] {
             24,
@@ -309,11 +312,45 @@
             this.label6.TabIndex = 18;
             this.label6.Text = "Silence Thresh";
             // 
+            // numericUpDown1
+            // 
+            this.numericUpDown1.Location = new System.Drawing.Point(286, 66);
+            this.numericUpDown1.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.numericUpDown1.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDown1.Name = "numericUpDown1";
+            this.numericUpDown1.Size = new System.Drawing.Size(62, 20);
+            this.numericUpDown1.TabIndex = 20;
+            this.numericUpDown1.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDown1.ValueChanged += new System.EventHandler(this.numericUpDown1_ValueChanged);
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(192, 68);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(88, 13);
+            this.label7.TabIndex = 21;
+            this.label7.Text = "Ramp Smoothing";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(383, 388);
+            this.Controls.Add(this.label7);
+            this.Controls.Add(this.numericUpDown1);
             this.Controls.Add(this.txtThreshold);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.lblRampTimer);
@@ -340,6 +377,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtThreshold)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -367,6 +405,8 @@
         private System.Windows.Forms.Label lblRampTimer;
         private System.Windows.Forms.NumericUpDown txtThreshold;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.NumericUpDown numericUpDown1;
+        private System.Windows.Forms.Label label7;
     }
 }
 
