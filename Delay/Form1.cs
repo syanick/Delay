@@ -29,6 +29,8 @@ namespace Delay
         int buffcumulative;
         int buffavgcounter = 0;
         int dumpMs = 0;
+        double silenceThreshold;
+        
 
         
         public Form1()
@@ -85,12 +87,12 @@ namespace Delay
 
         private void DataAvailable(object sender, WaveInEventArgs e)
         {
-            
-            
+
+           
 
             if ((targetRampedUp && rampingup && curdelay < targetMs))
             {
-                var stretchedbuffer = stretch(e.Buffer, (1.00 + (rampSpeed/100.0)));
+                var stretchedbuffer = stretch(e.Buffer, (1.00 + (rampSpeed/100.0)),silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 //ramping = false;
                 if (curdelay >= targetMs)
@@ -102,7 +104,7 @@ namespace Delay
             else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
             {
                 //Ramp down to the target
-                var stretchedbuffer = stretch(e.Buffer, (1.00 - (rampSpeed / 100.0)));
+                var stretchedbuffer = stretch(e.Buffer, (1.00 - (rampSpeed / 100.0)), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 if ((curdelay <= targetMs && targetRampedUp)||curdelay <= output.DesiredLatency)
                 {
@@ -144,6 +146,7 @@ namespace Delay
         private void timer1_Tick(object sender, EventArgs e)
         {
             curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+            silenceThreshold = (double)txtThreshold.Value;
             if (buffer != null)
             {
                 buffcumulative += curdelay;
@@ -288,6 +291,80 @@ namespace Delay
             }
             
             return outputbytes;
+        }
+
+        private byte[] stretch(byte[] inputbytes, double stretchfactor, double silenceThreshold)
+        {
+            if (dBFS(avgAudioLevel(inputbytes, waveformat))>silenceThreshold)
+            {
+                stretchfactor = 1.00;
+            }
+            int blockalign = input.WaveFormat.BlockAlign;
+            int outputblocks = (int)((inputbytes.Length / blockalign) * stretchfactor);
+            byte[] outputbytes = new byte[outputblocks * blockalign];
+
+            byte[][] inputblocks = new byte[inputbytes.Length / blockalign][];
+            for (int i = 0; i < inputblocks.Length; i++)
+            {
+                byte[] block = new byte[blockalign];
+                for (int j = 0; j < blockalign; j++)
+                {
+                    block[j] = inputbytes[(i * blockalign) + j];
+                }
+                inputblocks[i] = block;
+            }
+            for (int i = 0; i < outputbytes.Length; i += blockalign)
+            {
+                int blocktarget = (int)(((float)i / outputbytes.Length) * inputblocks.Length);
+                for (int j = 0; j < blockalign; j++)
+                {
+                    outputbytes[i + j] = inputblocks[blocktarget][j];
+                }
+            }
+
+            return outputbytes;
+        }
+
+        private float[] bytesToMonoSamples(byte[] buffer, WaveFormat waveformat)
+        {
+            float[] samples = new float[buffer.Length / waveformat.BlockAlign];
+            
+            for (int i = 0; i < samples.Length; i++)
+            {
+                
+                int sample=0;
+                //one frame
+                for (int j = 0; j < waveformat.Channels; j++)
+                {
+                    //one channel in the frame
+                    int monosample = 0;
+                    for (int k = 0; k < waveformat.BlockAlign/waveformat.Channels; k++)
+                    {
+                        //one byte in the channel
+                        monosample = sample << 8;
+                        monosample += buffer[(i * waveformat.BlockAlign) + (j * (waveformat.BlockAlign / waveformat.Channels)) + k];
+                    }
+                    sample += monosample / waveformat.Channels;
+                }
+                samples[i] = sample / 32768f;
+            }
+            return samples;
+        }
+
+        private float avgAudioLevel(byte[] buffer, WaveFormat waveformat)
+        {
+            float[] samples = bytesToMonoSamples(buffer, waveformat);
+            float avgLevel = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                avgLevel += samples[i];
+            }
+            return avgLevel / samples.Length;
+        }
+
+        private double dBFS (float level)
+        {
+            return 20 * Math.Log10((double)level);
         }
 
         private void btnDump_Click(object sender, EventArgs e)

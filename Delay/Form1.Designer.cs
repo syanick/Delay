@@ -47,15 +47,18 @@
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.btnCough = new System.Windows.Forms.Button();
             this.lblRampTimer = new System.Windows.Forms.Label();
+            this.txtThreshold = new System.Windows.Forms.NumericUpDown();
+            this.label6 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtThreshold)).BeginInit();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 15);
+            this.label1.Location = new System.Drawing.Point(37, 15);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(68, 13);
             this.label1.TabIndex = 0;
@@ -63,13 +66,13 @@
             // 
             // txtTarget
             // 
-            this.txtTarget.DecimalPlaces = 3;
+            this.txtTarget.DecimalPlaces = 1;
             this.txtTarget.Increment = new decimal(new int[] {
             1,
             0,
             0,
             65536});
-            this.txtTarget.Location = new System.Drawing.Point(86, 13);
+            this.txtTarget.Location = new System.Drawing.Point(111, 13);
             this.txtTarget.Maximum = new decimal(new int[] {
             864,
             0,
@@ -87,7 +90,7 @@
             // 
             // txtSpeed
             // 
-            this.txtSpeed.Location = new System.Drawing.Point(86, 40);
+            this.txtSpeed.Location = new System.Drawing.Point(111, 40);
             this.txtSpeed.Maximum = new decimal(new int[] {
             99,
             0,
@@ -111,7 +114,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(42, 42);
+            this.label2.Location = new System.Drawing.Point(67, 42);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(38, 13);
             this.label2.TabIndex = 3;
@@ -269,11 +272,50 @@
             this.lblRampTimer.TabIndex = 17;
             this.lblRampTimer.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
+            // txtThreshold
+            // 
+            this.txtThreshold.DecimalPlaces = 1;
+            this.txtThreshold.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.txtThreshold.Location = new System.Drawing.Point(111, 66);
+            this.txtThreshold.Maximum = new decimal(new int[] {
+            0,
+            0,
+            0,
+            0});
+            this.txtThreshold.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.txtThreshold.Name = "txtThreshold";
+            this.txtThreshold.Size = new System.Drawing.Size(120, 20);
+            this.txtThreshold.TabIndex = 19;
+            this.txtThreshold.Value = new decimal(new int[] {
+            24,
+            0,
+            0,
+            -2147483648});
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(27, 68);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(78, 13);
+            this.label6.TabIndex = 18;
+            this.label6.Text = "Silence Thresh";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(383, 388);
+            this.Controls.Add(this.txtThreshold);
+            this.Controls.Add(this.label6);
             this.Controls.Add(this.lblRampTimer);
             this.Controls.Add(this.btnCough);
             this.Controls.Add(this.progressBar1);
@@ -297,6 +339,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtThreshold)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -322,6 +365,8 @@
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Button btnCough;
         private System.Windows.Forms.Label lblRampTimer;
+        private System.Windows.Forms.NumericUpDown txtThreshold;
+        private System.Windows.Forms.Label label6;
     }
 }
 
