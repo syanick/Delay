@@ -253,7 +253,7 @@ namespace Delay
                     timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
-                this.Text = (1.00 + (realRampSpeed / (100.0 * realRampFactor))).ToString();
+                
             }
             else
             {
