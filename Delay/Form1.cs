@@ -92,7 +92,7 @@ namespace Delay
 
            
 
-            if ((targetRampedUp && rampingup && curdelay < targetMs)||quickramp)
+            if ((targetRampedUp && rampingup && curdelay < targetMs)||!quickramp)
             {
                 var stretchedbuffer = stretch(e.Buffer, (1.00 + (rampSpeed/100.0)),silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
@@ -121,6 +121,15 @@ namespace Delay
             else
             {
                 buffer.AddSamples(stretch(e.Buffer,1.00),0,e.BytesRecorded);
+                if (curdelay >= targetMs)
+                {
+                    rampingup = false;
+                    quickramp = false;
+                    if (output.PlaybackState == PlaybackState.Paused)
+                    {
+                        output.Play();
+                    }
+                }
             }
             if (targetRampedUp && curdelay >= targetMs)
             {
