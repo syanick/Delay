@@ -292,6 +292,7 @@ namespace Delay
 
         private void btnDump_Click(object sender, EventArgs e)
         {
+            input.StopRecording();
             output.Pause();
             var tempbuffer = buffer;
             int dumpbytes = (dumpMs / 1000) * waveformat.SampleRate * (waveformat.BitsPerSample / 8);
