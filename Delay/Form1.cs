@@ -19,6 +19,8 @@ namespace Delay
         WaveOutEvent output = new WaveOutEvent();
         WaveInEvent input = new WaveInEvent();
 
+        TimeSpan timetoRamp;
+
         bool targetRampedUp = false;
         bool rampingup = false;
         bool rampingdown = false;
@@ -150,7 +152,14 @@ namespace Delay
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+            if (buffer.BufferedBytes >= 0)
+            {
+                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+            }
+            else
+            {
+                curdelay = 0;
+            }
             silenceThreshold = (double)txtThreshold.Value;
             if (buffer != null)
             {
@@ -179,7 +188,8 @@ namespace Delay
                     {
                         btnExit.BackColor = Color.Yellow;
                     }
-                    lblRampTimer.Text = (new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (rampSpeed / 100.0))).ToString(@"h\:mm\:ss") + " Remaining");
+                    timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (rampSpeed / 100.0)));
+                    lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 else if (rampingup)
                 {
@@ -193,7 +203,8 @@ namespace Delay
                     {
                         btnBuild.BackColor = Color.Lime;
                     }
-                    lblRampTimer.Text = (new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (rampSpeed / 100.0))).ToString(@"h\:mm\:ss") + " Remaining");
+                    timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (rampSpeed / 100.0)));
+                    lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 
             }
@@ -201,6 +212,7 @@ namespace Delay
             {
                 btnBuild.BackColor = Color.DarkGreen;
                 btnExit.BackColor = Color.Olive;
+                timetoRamp = new TimeSpan();
                 lblRampTimer.Text = "";
             }
             if (curdelay > dumpMs - output.DesiredLatency)
