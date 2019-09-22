@@ -26,13 +26,11 @@ namespace Delay
         int rampSpeed = 2;
         int curdelay;
         int buffavg = 0;
+        int buffcumulative;
         int buffavgcounter = 0;
         int dumpMs = 0;
+
         
-        
-
-
-
         public Form1()
         {
             InitializeComponent();
@@ -148,15 +146,16 @@ namespace Delay
             curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
             if (buffer != null)
             {
-                buffavg += curdelay;
+                buffcumulative += curdelay;
                 buffavgcounter++;
                 if (buffavgcounter == 5)
                 {
-                    lblCurrentDelay.Text = new TimeSpan(0, 0, 0, 0, curdelay).ToString(@"mm\:ss\.f");
+                    buffavg = buffcumulative / buffavgcounter;
+                    lblCurrentDelay.Text = new TimeSpan(0, 0, 0, 0, buffavg).ToString(@"mm\:ss\.f");
                     buffavgcounter = 0;
-                    buffavg = 0;
+                    buffcumulative = 0;
                 }
-                               
+                                             
             }
             if (rampingup || rampingdown)
             {
@@ -172,6 +171,7 @@ namespace Delay
                     {
                         btnExit.BackColor = Color.Yellow;
                     }
+                    lblRampTimer.Text = (new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (rampSpeed / 100.0))).ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 else if (rampingup)
                 {
@@ -185,12 +185,15 @@ namespace Delay
                     {
                         btnBuild.BackColor = Color.Lime;
                     }
+                    lblRampTimer.Text = (new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (rampSpeed / 100.0))).ToString(@"h\:mm\:ss") + " Remaining");
                 }
+                
             }
             else
             {
                 btnBuild.BackColor = Color.DarkGreen;
                 btnExit.BackColor = Color.Olive;
+                lblRampTimer.Text = "";
             }
             if (curdelay > dumpMs - output.DesiredLatency)
             {

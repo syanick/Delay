@@ -46,6 +46,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.btnCough = new System.Windows.Forms.Button();
+            this.lblRampTimer = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
@@ -69,6 +70,11 @@
             0,
             65536});
             this.txtTarget.Location = new System.Drawing.Point(86, 13);
+            this.txtTarget.Maximum = new decimal(new int[] {
+            864,
+            0,
+            0,
+            0});
             this.txtTarget.Name = "txtTarget";
             this.txtTarget.Size = new System.Drawing.Size(120, 20);
             this.txtTarget.TabIndex = 1;
@@ -159,7 +165,6 @@
             this.btnDump.Text = "DUMP";
             this.btnDump.UseVisualStyleBackColor = false;
             this.btnDump.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnDump_Click);
-            this.btnDump.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnCough_MouseDown);
             this.btnDump.MouseUp += new System.Windows.Forms.MouseEventHandler(this.btnCough_MouseUp);
             // 
             // inputSelector
@@ -255,11 +260,21 @@
             this.btnCough.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnCough_MouseDown);
             this.btnCough.MouseUp += new System.Windows.Forms.MouseEventHandler(this.btnCough_MouseUp);
             // 
+            // lblRampTimer
+            // 
+            this.lblRampTimer.BackColor = System.Drawing.Color.Transparent;
+            this.lblRampTimer.Location = new System.Drawing.Point(27, 219);
+            this.lblRampTimer.Name = "lblRampTimer";
+            this.lblRampTimer.Size = new System.Drawing.Size(321, 14);
+            this.lblRampTimer.TabIndex = 17;
+            this.lblRampTimer.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(383, 388);
+            this.Controls.Add(this.lblRampTimer);
             this.Controls.Add(this.btnCough);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.label3);
@@ -306,6 +321,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Button btnCough;
+        private System.Windows.Forms.Label lblRampTimer;
     }
 }
 
