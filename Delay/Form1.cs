@@ -30,7 +30,7 @@ namespace Delay
         int buffavgcounter = 0;
         int dumpMs = 0;
         double silenceThreshold;
-        
+        bool quickramp = false;
 
         
         public Form1()
@@ -90,7 +90,7 @@ namespace Delay
 
            
 
-            if ((targetRampedUp && rampingup && curdelay < targetMs))
+            if ((targetRampedUp && rampingup && curdelay < targetMs)||quickramp)
             {
                 var stretchedbuffer = stretch(e.Buffer, (1.00 + (rampSpeed/100.0)),silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
@@ -98,6 +98,11 @@ namespace Delay
                 if (curdelay >= targetMs)
                 {
                     rampingup = false;
+                    quickramp = false;
+                    if(output.PlaybackState == PlaybackState.Paused)
+                    {
+                        output.Play();
+                    }
                 }
             }
             
@@ -123,7 +128,7 @@ namespace Delay
             {
                 rampingdown = false;
             }
-            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency)
+            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp)
             {
                 output.Play();
             }
@@ -250,6 +255,16 @@ namespace Delay
             targetMs = (int)(txtTarget.Value * 1000);
             targetRampedUp = true;
             rampingdown = false;
+            if (quickramp)
+            {
+                output.Play();
+                quickramp = false;
+            }
+            else if (rampingup)
+            {
+                output.Pause();
+                quickramp = true;
+            }
             rampingup = true;
         }
 
