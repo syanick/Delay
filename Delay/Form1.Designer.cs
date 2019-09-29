@@ -316,7 +316,7 @@
             // 
             this.numericUpDown1.Location = new System.Drawing.Point(286, 66);
             this.numericUpDown1.Maximum = new decimal(new int[] {
-            10,
+            20,
             0,
             0,
             0});
@@ -329,7 +329,7 @@
             this.numericUpDown1.Size = new System.Drawing.Size(62, 20);
             this.numericUpDown1.TabIndex = 20;
             this.numericUpDown1.Value = new decimal(new int[] {
-            1,
+            2,
             0,
             0,
             0});
