@@ -1,14 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
+
 
 namespace Delay
 {
@@ -31,10 +25,11 @@ namespace Delay
         int buffcumulative;
         int buffavgcounter = 0;
         int dumpMs = 0;
-        double silenceThreshold;
+        double silenceThreshold = 0;
         bool quickramp = false;
         int realRampSpeed = 0;
-        int realRampFactor = 2; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
+        int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
+        bool smoothchange = true;
         
 
         public Form1()
@@ -60,8 +55,8 @@ namespace Delay
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
             dumpMs = (int)(targetMs / txtDumps.Value);
-            numericUpDown1.Value = realRampFactor / 2;
-
+            numericUpDown1.Value = realRampFactor;
+            txtThreshold.Value = Convert.ToDecimal(silenceThreshold);
             InitializeAudio();
         }
 
@@ -93,12 +88,9 @@ namespace Delay
 
         private void DataAvailable(object sender, WaveInEventArgs e)
         {
-
-           
-
             if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
             {
-                var stretchedbuffer = stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now 
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now 
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 if ((targetMs - (curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor))))) > (realRampSpeed * 20))
@@ -117,10 +109,9 @@ namespace Delay
                 }
                 
                 //ramping = false;
-                if (curdelay >= targetMs + output.DesiredLatency)
+                if (curdelay >= targetMs)
                 {
                     rampingup = false;
-                    btnDump.BackColor = Color.Red;
                     quickramp = false;
                     if(output.PlaybackState == PlaybackState.Paused)
                     {
@@ -132,7 +123,7 @@ namespace Delay
             else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
             {
                 //Ramp down to the target
-                var stretchedbuffer = stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now , silenceThreshold);
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now , silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 if ((-1 * curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor)))) < ((realRampSpeed * 20) - output.DesiredLatency))
@@ -157,7 +148,7 @@ namespace Delay
             }
             else
             {
-                buffer.AddSamples(stretch(e.Buffer,1.00),0,e.BytesRecorded);
+                buffer.AddSamples(Stretch(e.Buffer,1.00),0,e.BytesRecorded);
                 realRampSpeed = 0;
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 if (curdelay >= targetMs)
@@ -170,7 +161,7 @@ namespace Delay
                     }
                 }
             }
-            if (targetRampedUp && curdelay >= targetMs + output.DesiredLatency)
+            if (targetRampedUp && curdelay >= targetMs)
             {
                 rampingup = false;
             }
@@ -202,7 +193,7 @@ namespace Delay
         {
             if (buffer.BufferedBytes >= 0)
             {
-                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                //curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
             }
             else
             {
@@ -219,6 +210,14 @@ namespace Delay
                     lblCurrentDelay.Text = new TimeSpan(0, 0, 0, 0, buffavg).ToString(@"mm\:ss\.f");
                     buffavgcounter = 0;
                     buffcumulative = 0;
+                    if (buffavg > dumpMs - output.DesiredLatency)
+                    {
+                        btnDump.BackColor = Color.Red;
+                    }
+                    else
+                    {
+                        btnDump.BackColor = Color.DarkRed;
+                    }
                 }
                                              
             }
@@ -236,14 +235,22 @@ namespace Delay
                     {
                         btnExit.BackColor = Color.Yellow;
                     }
-                    timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (realRampSpeed / (100.0 * realRampFactor))));
+                    if (!targetRampedUp)
+                    {
+                        timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (realRampSpeed / (100.0 * realRampFactor))));
+                    }
+                    else
+                    {
+                        timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - targetMs) / (realRampSpeed / (100.0 * realRampFactor))));
+                    }
+                    
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 else if (rampingup)
                 {
                     //we are ramping up
                     btnExit.BackColor = Color.Olive;
-                    if (btnBuild.BackColor == Color.Lime)
+                    if (btnBuild.BackColor == Color.Lime && !quickramp)
                     {
                         btnBuild.BackColor = Color.DarkGreen;
                     }
@@ -261,31 +268,44 @@ namespace Delay
                 btnBuild.BackColor = Color.DarkGreen;
                 btnExit.BackColor = Color.Olive;
                 timetoRamp = new TimeSpan();
-                lblRampTimer.Text = "";
-            }
-            if (curdelay > dumpMs - output.DesiredLatency && !rampingdown)
-            {
-                btnDump.BackColor = Color.Red;
-            }
-            else if (curdelay < dumpMs && !rampingup)
-            {
-                btnDump.BackColor = Color.DarkRed;
+                
+                //lblRampTimer.Text = "";
+                if (smoothchange)
+                {
+                    realRampFactor = (int)numericUpDown1.Value;
+                    smoothchange = false;
+                }
             }
             if (targetMs < output.DesiredLatency)
             {
                 targetMs = output.DesiredLatency;
             }
-            progressBar1.Maximum = targetMs;
-            if (curdelay <= targetMs)
+            
+            if (targetRampedUp && targetMs < curdelay && rampingdown)
             {
-                progressBar1.Value = curdelay;
+                progressBar1.Minimum = targetMs;
+                if (curdelay <= progressBar1.Maximum && curdelay >= progressBar1.Minimum)
+                {
+                    progressBar1.Value = curdelay;
+                }
+
             }
             else
             {
-                progressBar1.Value = targetMs;
+                progressBar1.Maximum = targetMs;
+                progressBar1.Minimum = 0;
+                if (curdelay <= targetMs)
+                {
+                    progressBar1.Value = curdelay;
+                }
+                else
+                {
+                    progressBar1.Value = targetMs;
+                }
             }
 
-            
+
+
         }
 
         private void txtTarget_ValueChanged(object sender, EventArgs e)
@@ -303,14 +323,6 @@ namespace Delay
                 rampingdown = false;
             }
             dumpMs = (int)(targetMs / txtDumps.Value);
-            if (dumpMs > curdelay)
-            {
-                btnDump.BackColor = Color.DarkRed;
-            }
-            else
-            {
-                btnDump.BackColor = Color.Red;
-            }
         }
 
         private void txtSpeed_ValueChanged(object sender, EventArgs e)
@@ -352,39 +364,15 @@ namespace Delay
 
         
         
-              
-
-        private byte[] stretch(byte[] inputbytes, double stretchfactor)
+           
+        private byte[] Stretch(byte[] inputbytes, double stretchfactor)
         {
-            int blockalign = input.WaveFormat.BlockAlign;
-            int outputblocks = (int)((inputbytes.Length / blockalign) * stretchfactor);
-            byte[] outputbytes = new byte[outputblocks* blockalign];
-            
-            byte[][] inputblocks = new byte[inputbytes.Length / blockalign][];
-            for (int i = 0; i < inputblocks.Length; i++)
-            {
-                byte[] block = new byte[blockalign];
-                for (int j = 0; j < blockalign; j++)
-                {
-                    block[j] = inputbytes[(i * blockalign) + j];
-                }
-                inputblocks[i] = block;
-            }
-            for (int i = 0; i < outputbytes.Length; i+=blockalign)
-            {
-                int blocktarget = (int)(((float)i / outputbytes.Length) * inputblocks.Length);
-                for (int j = 0; j < blockalign; j++)
-                {
-                    outputbytes[i + j] = inputblocks[blocktarget][j];
-                }
-            }
-            
-            return outputbytes;
+            return (Stretch(inputbytes, stretchfactor, 0));
         }
 
-        private byte[] stretch(byte[] inputbytes, double stretchfactor, double silenceThreshold)
+        private byte[] Stretch(byte[] inputbytes, double stretchfactor, double silenceThreshold)
         {
-            if (dBFS(avgAudioLevel(inputbytes, waveformat))>silenceThreshold)
+            if (dBFS(AvgAudioLevel(inputbytes, waveformat))>silenceThreshold)
             {
                 stretchfactor = 1.00;
                 realRampSpeed = 0;
@@ -392,7 +380,11 @@ namespace Delay
             int blockalign = input.WaveFormat.BlockAlign;
             int outputblocks = (int)((inputbytes.Length / blockalign) * stretchfactor);
             byte[] outputbytes = new byte[outputblocks * blockalign];
-
+            if (stretchfactor < 1)
+            {
+                inputbytes = LowPass(inputbytes, waveformat.SampleRate / (2/stretchfactor),waveformat);
+            }
+            
             byte[][] inputblocks = new byte[inputbytes.Length / blockalign][];
             for (int i = 0; i < inputblocks.Length; i++)
             {
@@ -411,11 +403,12 @@ namespace Delay
                     outputbytes[i + j] = inputblocks[blocktarget][j];
                 }
             }
-
-            return outputbytes;
+            return LowPass(outputbytes, waveformat.SampleRate/2,waveformat);
+            
+             
         }
 
-        private float[] bytesToMonoSamples(byte[] buffer, WaveFormat waveformat)
+        private float[] BytesToMonoSamples(byte[] buffer, WaveFormat waveformat)
         {
             float[] samples = new float[buffer.Length / waveformat.BlockAlign];
             
@@ -428,28 +421,80 @@ namespace Delay
                 {
                     //one channel in the frame
                     int monosample = 0;
+                    //int k = 0; k < waveformat.BlockAlign/waveformat.Channels; k++
                     for (int k = 0; k < waveformat.BlockAlign/waveformat.Channels; k++)
                     {
                         //one byte in the channel
-                        monosample = sample << 8;
+                        monosample = monosample << 8;
                         monosample += buffer[(i * waveformat.BlockAlign) + (j * (waveformat.BlockAlign / waveformat.Channels)) + k];
+                    }
+                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2) - 1;
+                    if (monosample > maxint)
+                    {
+                        monosample = -1 - ((maxint + 1) - (monosample - maxint));
                     }
                     sample += monosample / waveformat.Channels;
                 }
-                samples[i] = sample / 32768f;
+                samples[i] = sample / ((float)Math.Pow(2, waveformat.BitsPerSample));
             }
             return samples;
         }
 
-        private float avgAudioLevel(byte[] buffer, WaveFormat waveformat)
+        private float[][] BytesToSamples(byte[] buffer, WaveFormat waveformat)
         {
-            float[] samples = bytesToMonoSamples(buffer, waveformat);
+            float[][] samples = new float[waveformat.Channels][];
+            for (int i = 0; i < waveformat.Channels; i++)
+            {
+                float[] channel = new float[(buffer.Length / waveformat.BlockAlign)];
+                for (int j = 0; j < channel.Length; j++)
+                {
+                    int monosample = 0;
+                    for (int k = waveformat.BitsPerSample / 8; k > 0; k--)
+                    {
+                        monosample = monosample << 8;
+                        monosample += buffer[(j * waveformat.BlockAlign) + (i * (waveformat.BlockAlign / waveformat.Channels)) + (k-1)];
+                    }
+                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2)-1;
+                    if (monosample > maxint)
+                    {
+                        monosample = -1 - ((maxint+1)-(monosample - maxint));
+                    }
+                    channel[j] = monosample / ((float)Math.Pow(2,waveformat.BitsPerSample));
+                }
+                samples[i] = channel;
+            }
+            return samples;
+        }
+
+        private byte[] SamplesToBytes(float[][] samples, WaveFormat waveformat)
+        {
+            byte[] bytes = new byte[samples[0].Length * waveformat.BlockAlign];
+
+            for (int i = 0; i < waveformat.Channels; i++)
+            {
+                for (int j = 0; j < samples[0].Length; j++)
+                {
+                    int monosample = (int)(samples[i][j]* ((float)Math.Pow(2, waveformat.BitsPerSample)));
+                    //int k = waveformat.BitsPerSample / 8; k > 0; k--
+                    for (int k = 0; k < waveformat.BlockAlign / waveformat.Channels; k++)
+                    {
+                        bytes[(j * waveformat.BlockAlign) + (i * (waveformat.BlockAlign / waveformat.Channels)) + (k)] = (byte)(monosample);
+                        monosample = monosample >> 8;
+                    }
+                }
+            }
+            return bytes;
+        }
+
+        private float AvgAudioLevel(byte[] buffer, WaveFormat waveformat)
+        {
+            float[] samples = BytesToMonoSamples(buffer, waveformat);
             float avgLevel = 0;
             for (int i = 0; i < samples.Length; i++)
             {
-                avgLevel += samples[i];
+                avgLevel += samples[i] * samples[i];
             }
-            return avgLevel / samples.Length;
+            return (float)Math.Sqrt(avgLevel / samples.Length);
         }
 
         private double dBFS (float level)
@@ -461,17 +506,10 @@ namespace Delay
         {
             input.StopRecording();
             output.Pause();
-            var tempbuffer = buffer;
-            int dumpbytes = (dumpMs / 1000) * waveformat.SampleRate * (waveformat.BitsPerSample / 8);
-            if (tempbuffer.BufferedBytes > dumpbytes)
-            {
-                byte[] newBuffer = new byte[tempbuffer.BufferedBytes - dumpbytes];
-                for (int i = 0; i < newBuffer.Length; i++)
-                {
-                    
-                }
-            }
+            
             buffer.ClearBuffer();
+            
+            
 
 
             curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
@@ -507,7 +545,43 @@ namespace Delay
 
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
         {
-            realRampFactor = (int)numericUpDown1.Value * 2;
+            if (!(rampingup || rampingdown))
+            {
+                realRampFactor = (int)numericUpDown1.Value;
+            }
+            else
+            {
+                smoothchange = true;
+            }
+            
+
         }
+
+
+        public byte[] LowPass(byte[] source, double frequency, WaveFormat waveformat)
+        {
+            var sourceSamples = BytesToSamples(source, waveformat);
+            for (int i = 0; i < sourceSamples.Length; i++)
+            {
+                sourceSamples[i] = LowPass(sourceSamples[i], frequency, waveformat.SampleRate);
+            }
+            return SamplesToBytes(sourceSamples, waveformat);
+        }
+
+
+        public float[] LowPass(float[] input, double frequency, int samplerate)
+        {
+            double RC = 1 / (frequency * 2 * Math.PI);
+            double dt = (double)1 / samplerate;
+            double alpha = dt / (RC + dt);
+            float[] output = new float[input.Length];
+            output[0] = input[0];
+            for (int i = 1; i < input.Length; i++)
+            {
+                output[i] = (float)(output[i - 1] + (alpha * (input[i] - output[i - 1])));
+            }
+            return output;
+        }
+
     }
 }
