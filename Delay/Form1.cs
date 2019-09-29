@@ -117,9 +117,10 @@ namespace Delay
                 }
                 
                 //ramping = false;
-                if (curdelay >= targetMs)
+                if (curdelay >= targetMs + output.DesiredLatency)
                 {
                     rampingup = false;
+                    btnDump.BackColor = Color.Red;
                     quickramp = false;
                     if(output.PlaybackState == PlaybackState.Paused)
                     {
@@ -169,7 +170,7 @@ namespace Delay
                     }
                 }
             }
-            if (targetRampedUp && curdelay >= targetMs)
+            if (targetRampedUp && curdelay >= targetMs + output.DesiredLatency)
             {
                 rampingup = false;
             }
@@ -201,7 +202,7 @@ namespace Delay
         {
             if (buffer.BufferedBytes >= 0)
             {
-                //curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
             }
             else
             {
@@ -262,11 +263,11 @@ namespace Delay
                 timetoRamp = new TimeSpan();
                 lblRampTimer.Text = "";
             }
-            if (curdelay > dumpMs - output.DesiredLatency)
+            if (curdelay > dumpMs - output.DesiredLatency && !rampingdown)
             {
                 btnDump.BackColor = Color.Red;
             }
-            else
+            else if (curdelay < dumpMs && !rampingup)
             {
                 btnDump.BackColor = Color.DarkRed;
             }
@@ -302,6 +303,14 @@ namespace Delay
                 rampingdown = false;
             }
             dumpMs = (int)(targetMs / txtDumps.Value);
+            if (dumpMs > curdelay)
+            {
+                btnDump.BackColor = Color.DarkRed;
+            }
+            else
+            {
+                btnDump.BackColor = Color.Red;
+            }
         }
 
         private void txtSpeed_ValueChanged(object sender, EventArgs e)
