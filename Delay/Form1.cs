@@ -28,7 +28,7 @@ namespace Delay
         double silenceThreshold = 0;
         bool quickramp = false;
         int realRampSpeed = 0;
-        int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
+        double realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
         bool smoothchange = true;
         
 
@@ -55,7 +55,7 @@ namespace Delay
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
             dumpMs = (int)(targetMs / txtDumps.Value);
-            numericUpDown1.Value = realRampFactor;
+            numericUpDown1.Value = (int)realRampFactor;
             txtThreshold.Value = Convert.ToDecimal(silenceThreshold);
             InitializeAudio();
         }
@@ -105,7 +105,7 @@ namespace Delay
                     if(realRampSpeed > (realRampFactor / 2))
                         realRampSpeed--;
                     else
-                        realRampSpeed = realRampFactor / 2;
+                        realRampSpeed = (int)(realRampFactor / 2);
                 }
                 
                 //ramping = false;
@@ -138,7 +138,7 @@ namespace Delay
                     if(realRampSpeed < (-1 * (realRampFactor / 2)))
                         realRampSpeed++;
                     else
-                        realRampSpeed = -1 * (realRampFactor / 2);
+                        realRampSpeed = -1 * (int)(realRampFactor / 2);
                 }
 
                 if ((curdelay <= targetMs && targetRampedUp)||curdelay <= output.DesiredLatency)
@@ -516,12 +516,16 @@ namespace Delay
         {
             input.StopRecording();
             output.Pause();
-            
-            buffer.ClearBuffer();
-            
-            
 
-
+            if (curdelay - output.DesiredLatency > dumpMs)
+            {
+                //partially dump the buffer
+            }
+            else
+            {
+                //completely dump the buffer
+                buffer.ClearBuffer();
+            }
             curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
             if (targetRampedUp && curdelay < targetMs)
             {
