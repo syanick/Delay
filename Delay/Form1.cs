@@ -388,12 +388,23 @@ namespace Delay
             float[][] outputSamples = new float[inputSamples.Length][];
             for (int c = 0; c < outputSamples.Length; c++)
             {
-                outputSamples[c] = new float[(int)((inputbytes.Length / blockalign) * stretchfactor)];
-                for (int i = 0; i < outputSamples[c].Length; i++)
+                outputSamples[c] = new float[(int)(inputSamples[c].Length * stretchfactor)];
+                outputSamples[c][0] = inputSamples[c][0];
+                for (int i = 1; i < outputSamples[c].Length - 1 ; i++)
                 {
-                    int sampleTarget = (int)(((double)(i * inputSamples[c].Length) / outputSamples[c].Length));
-                    outputSamples[c][i] = inputSamples[c][sampleTarget];
+                    double sampleTarget = (((double)(i * inputSamples[c].Length) / outputSamples[c].Length));
+                    if (sampleTarget % 1 == 0)
+                    {
+                        outputSamples[c][i] = inputSamples[c][(int)sampleTarget];
+                    }
+                    else
+                    {
+                        double interp = sampleTarget - (int)sampleTarget;
+                        float diff = inputSamples[c][(int)sampleTarget + 1] - inputSamples[c][(int)sampleTarget];
+                        outputSamples[c][i] = inputSamples[c][(int)sampleTarget] + (float)(interp * diff);
+                    }
                 }
+                outputSamples[c][outputSamples[c].Length-1] = inputSamples[c][inputSamples[c].Length-1];
             }
             if (stretchfactor > 1)
             {
