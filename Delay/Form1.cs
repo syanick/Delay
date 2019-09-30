@@ -91,7 +91,7 @@ namespace Delay
         {
             if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
             {
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now 
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 if ((targetMs - curdelay) > endRampTime)
@@ -101,7 +101,7 @@ namespace Delay
                     else if(realRampSpeed > (rampSpeed * realRampFactor))
                         realRampSpeed--;
 
-                    double tempEndRampTime = 250;
+                    double tempEndRampTime = 75;
                     for (int i = 0; i < realRampSpeed; i++)
                     {
                         tempEndRampTime += i / realRampFactor;
@@ -110,10 +110,10 @@ namespace Delay
                 }
                 else
                 {
-                    if(realRampSpeed > (realRampFactor / 2))
+                    if(realRampSpeed > realRampFactor)
                         realRampSpeed--;
                     else
-                        realRampSpeed = realRampFactor / 2;
+                        realRampSpeed = realRampFactor;
                 }
                 
                 //ramping = false;
@@ -131,22 +131,35 @@ namespace Delay
             else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
             {
                 //Ramp down to the target
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now , silenceThreshold);
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                if ((-1 * curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor)))) < ((realRampSpeed * 20) - output.DesiredLatency))
+
+                int realTarget = 0;
+                if (targetRampedUp)
+                    realTarget = targetMs;
+
+                //if ((-1 * curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor)))) < ((realRampSpeed * 20) - output.DesiredLatency))
+                if ((realTarget - curdelay) < endRampTime)
                 {
                     if(realRampSpeed > (-1 * rampSpeed * realRampFactor))
                         realRampSpeed--;
                     else if(realRampSpeed < (-1 * rampSpeed * realRampFactor))
                         realRampSpeed++;
+
+                    double tempEndRampTime = -500;
+                    for (int i = 0; i > realRampSpeed; i--)
+                    {
+                        tempEndRampTime += i / realRampFactor;
+                    }
+                    endRampTime = (int)tempEndRampTime;
                 }
                 else
                 {
-                    if(realRampSpeed < (-1 * (realRampFactor / 2)))
+                    if(realRampSpeed < (-1 * realRampFactor))
                         realRampSpeed++;
                     else
-                        realRampSpeed = -1 * (realRampFactor / 2);
+                        realRampSpeed = -1 * realRampFactor;
                 }
 
                 if ((curdelay <= targetMs && targetRampedUp)||curdelay <= output.DesiredLatency)
@@ -156,9 +169,22 @@ namespace Delay
             }
             else
             {
-                buffer.AddSamples(Stretch(e.Buffer,1.00),0,e.BytesRecorded);
-                realRampSpeed = 0;
+                if(realRampSpeed == 0)
+                {
+                    buffer.AddSamples(Stretch(e.Buffer,1.00),0,e.BytesRecorded);
+                }
+                else
+                {
+                    var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
+                    buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                    if (realRampSpeed > 0)
+                        realRampSpeed--;
+                    else if (realRampSpeed < 0)
+                        realRampSpeed++;
+                }
+
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                endRampTime = 0;
                 if (curdelay >= targetMs)
                 {
                     rampingup = false;
