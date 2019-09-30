@@ -179,12 +179,17 @@ namespace Delay
                 }
                 else
                 {
-                    var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
-                    buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
-                    if (realRampSpeed > 0)
-                        realRampSpeed--;
-                    else if (realRampSpeed < 0)
-                        realRampSpeed++;
+                    if (curdelay > 200)
+                    {
+                        var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
+                        buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                        if (realRampSpeed > 0)
+                            realRampSpeed--;
+                        else if (realRampSpeed < 0)
+                            realRampSpeed++;
+                    }
+                    else
+                        realRampSpeed = 0;
                 }
 
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
