@@ -101,7 +101,7 @@ namespace Delay
                     else if(realRampSpeed > (rampSpeed * realRampFactor))
                         realRampSpeed--;
 
-                    double tempEndRampTime = 75;
+                    double tempEndRampTime = 0;
                     for (int i = 0; i < realRampSpeed; i++)
                     {
                         tempEndRampTime += i / realRampFactor;
@@ -147,7 +147,11 @@ namespace Delay
                     else if(realRampSpeed < (-1 * rampSpeed * realRampFactor))
                         realRampSpeed++;
 
-                    double tempEndRampTime = -500;
+
+                    double tempEndRampTime = -400;
+                    if (targetRampedUp)
+                        tempEndRampTime = 0;
+
                     for (int i = 0; i > realRampSpeed; i--)
                     {
                         tempEndRampTime += i / realRampFactor;
