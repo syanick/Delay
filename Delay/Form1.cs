@@ -29,6 +29,7 @@ namespace Delay
         bool quickramp = false;
         int realRampSpeed = 0;
         int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
+        int endRampTime = 0;
         bool smoothchange = true;
         
 
@@ -93,12 +94,19 @@ namespace Delay
                 var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now 
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                if ((targetMs - (curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor))))) > (realRampSpeed * 20))
+                if ((targetMs - curdelay) > endRampTime)
                 {
                     if(realRampSpeed < (rampSpeed * realRampFactor))
                         realRampSpeed++;
                     else if(realRampSpeed > (rampSpeed * realRampFactor))
                         realRampSpeed--;
+
+                    double tempEndRampTime = 250;
+                    for (int i = 0; i < realRampSpeed; i++)
+                    {
+                        tempEndRampTime += i / realRampFactor;
+                    }
+                    endRampTime = (int)tempEndRampTime;
                 }
                 else
                 {
@@ -191,6 +199,9 @@ namespace Delay
 
         private void timer1_Tick(object sender, EventArgs e)
         {
+            lblDebug1.Text = endRampTime.ToString();
+            lblDebug2.Text = realRampSpeed.ToString();
+
             if (buffer.BufferedBytes >= 0)
             {
                 //curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
