@@ -384,7 +384,7 @@ namespace Delay
             {
                 inputbytes = LowPass(inputbytes, waveformat.SampleRate / (2/stretchfactor),waveformat);
             }
-            
+                        
             byte[][] inputblocks = new byte[inputbytes.Length / blockalign][];
             for (int i = 0; i < inputblocks.Length; i++)
             {
@@ -397,15 +397,23 @@ namespace Delay
             }
             for (int i = 0; i < outputbytes.Length; i += blockalign)
             {
-                int blocktarget = (int)(((float)i / outputbytes.Length) * inputblocks.Length);
+                int blocktarget = (int)(((double)(i * inputblocks.Length) / outputbytes.Length) );
                 for (int j = 0; j < blockalign; j++)
                 {
                     outputbytes[i + j] = inputblocks[blocktarget][j];
                 }
+                
             }
-            return LowPass(outputbytes, waveformat.SampleRate/2,waveformat);
+            if (stretchfactor > 1)
+            {
+                return LowPass(outputbytes, waveformat.SampleRate / (2 * (stretchfactor)), waveformat);
+            }
+            else
+            {
+                return outputbytes;
+            }
             
-             
+           
         }
 
         private float[] BytesToMonoSamples(byte[] buffer, WaveFormat waveformat)
