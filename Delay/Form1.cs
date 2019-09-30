@@ -378,42 +378,33 @@ namespace Delay
                 realRampSpeed = 0;
             }
             int blockalign = input.WaveFormat.BlockAlign;
-            int outputblocks = (int)((inputbytes.Length / blockalign) * stretchfactor);
-            byte[] outputbytes = new byte[outputblocks * blockalign];
+
             if (stretchfactor < 1)
             {
                 inputbytes = LowPass(inputbytes, waveformat.SampleRate / (2/stretchfactor),waveformat);
             }
-                        
-            byte[][] inputblocks = new byte[inputbytes.Length / blockalign][];
-            for (int i = 0; i < inputblocks.Length; i++)
+
+            float[][] inputSamples = BytesToSamples(inputbytes, waveformat);
+            float[][] outputSamples = new float[inputSamples.Length][];
+            for (int c = 0; c < outputSamples.Length; c++)
             {
-                byte[] block = new byte[blockalign];
-                for (int j = 0; j < blockalign; j++)
+                outputSamples[c] = new float[(int)((inputbytes.Length / blockalign) * stretchfactor)];
+                for (int i = 0; i < outputSamples[c].Length; i++)
                 {
-                    block[j] = inputbytes[(i * blockalign) + j];
+                    int sampleTarget = (int)(((double)(i * inputSamples[c].Length) / outputSamples[c].Length));
+                    outputSamples[c][i] = inputSamples[c][sampleTarget];
                 }
-                inputblocks[i] = block;
-            }
-            for (int i = 0; i < outputbytes.Length; i += blockalign)
-            {
-                int blocktarget = (int)(((double)(i * inputblocks.Length) / outputbytes.Length) );
-                for (int j = 0; j < blockalign; j++)
-                {
-                    outputbytes[i + j] = inputblocks[blocktarget][j];
-                }
-                
             }
             if (stretchfactor > 1)
             {
-                return LowPass(outputbytes, waveformat.SampleRate / (2 * (stretchfactor)), waveformat);
+                for (int i = 0; i < outputSamples.Length; i++)
+                {
+                    outputSamples[i] = LowPass(outputSamples[i], waveformat.SampleRate / (2 * (stretchfactor)), waveformat.SampleRate);
+                }
             }
-            else
-            {
-                return outputbytes;
-            }
-            
-           
+            return SamplesToBytes(outputSamples, waveformat);
+
+
         }
 
         private float[] BytesToMonoSamples(byte[] buffer, WaveFormat waveformat)
