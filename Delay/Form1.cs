@@ -31,7 +31,9 @@ namespace Delay
         int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
         int endRampTime = 0;
         bool smoothchange = true;
-        
+        bool smoothRampEnabled = true;
+        bool almostDoneRampingUp = false;
+        bool almostDoneRampingDown = false;
 
         public Form1()
         {
@@ -94,26 +96,34 @@ namespace Delay
                 var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                if ((targetMs - curdelay) > endRampTime)
+                if (smoothRampEnabled)
                 {
-                    if(realRampSpeed < (rampSpeed * realRampFactor))
-                        realRampSpeed++;
-                    else if(realRampSpeed > (rampSpeed * realRampFactor))
-                        realRampSpeed--;
-
-                    double tempEndRampTime = 0;
-                    for (int i = 0; i < realRampSpeed; i++)
+                    if ((targetMs - curdelay) > endRampTime && !almostDoneRampingUp)
                     {
-                        tempEndRampTime += i / realRampFactor;
+                        if (realRampSpeed < (rampSpeed * realRampFactor))
+                            realRampSpeed++;
+                        else if (realRampSpeed > (rampSpeed * realRampFactor))
+                            realRampSpeed--;
+
+                        double tempEndRampTime = 0;
+                        for (int i = 0; i < realRampSpeed; i++)
+                        {
+                            tempEndRampTime += 1.000 * i / realRampFactor;
+                        }
+                        endRampTime = (int)tempEndRampTime;
                     }
-                    endRampTime = (int)tempEndRampTime;
+                    else
+                    {
+                        if (realRampSpeed > realRampFactor)
+                            realRampSpeed--;
+                        else
+                            realRampSpeed = realRampFactor;
+                        almostDoneRampingUp = true;
+                    }
                 }
                 else
                 {
-                    if(realRampSpeed > realRampFactor)
-                        realRampSpeed--;
-                    else
-                        realRampSpeed = realRampFactor;
+                    realRampSpeed = rampSpeed;
                 }
                 
                 //ramping = false;
@@ -139,31 +149,38 @@ namespace Delay
                 if (targetRampedUp)
                     realTarget = targetMs;
 
-                //if ((-1 * curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor)))) < ((realRampSpeed * 20) - output.DesiredLatency))
-                if ((realTarget - curdelay) < endRampTime)
+                if (smoothRampEnabled)
                 {
-                    if(realRampSpeed > (-1 * rampSpeed * realRampFactor))
-                        realRampSpeed--;
-                    else if(realRampSpeed < (-1 * rampSpeed * realRampFactor))
-                        realRampSpeed++;
-
-
-                    double tempEndRampTime = -400;
-                    if (targetRampedUp)
-                        tempEndRampTime = 0;
-
-                    for (int i = 0; i > realRampSpeed; i--)
+                    if ((realTarget - curdelay) < endRampTime && !almostDoneRampingDown)
                     {
-                        tempEndRampTime += i / realRampFactor;
+                        if (realRampSpeed > (-1 * rampSpeed * realRampFactor))
+                            realRampSpeed--;
+                        else if (realRampSpeed < (-1 * rampSpeed * realRampFactor))
+                            realRampSpeed++;
+
+
+                        double tempEndRampTime = 0 - output.DesiredLatency;
+                        if (targetRampedUp)
+                            tempEndRampTime = 0;
+
+                        for (int i = 0; i > realRampSpeed; i--)
+                        {
+                            tempEndRampTime += 1.000 * i / realRampFactor;
+                        }
+                        endRampTime = (int)tempEndRampTime;
                     }
-                    endRampTime = (int)tempEndRampTime;
+                    else
+                    {
+                        if (realRampSpeed < (-1 * realRampFactor))
+                            realRampSpeed++;
+                        else
+                            realRampSpeed = -1 * realRampFactor;
+                        almostDoneRampingDown = true;
+                    }
                 }
                 else
                 {
-                    if(realRampSpeed < (-1 * realRampFactor))
-                        realRampSpeed++;
-                    else
-                        realRampSpeed = -1 * realRampFactor;
+                    realRampSpeed = -1 * rampSpeed;
                 }
 
                 if ((curdelay <= targetMs && targetRampedUp)||curdelay <= output.DesiredLatency)
@@ -179,21 +196,30 @@ namespace Delay
                 }
                 else
                 {
-                    if (curdelay > 200)
+                    if (smoothRampEnabled)
                     {
-                        var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
-                        buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
-                        if (realRampSpeed > 0)
-                            realRampSpeed--;
-                        else if (realRampSpeed < 0)
-                            realRampSpeed++;
+                        if (curdelay > 200)
+                        {
+                            var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
+                            buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                            if (realRampSpeed > 0)
+                                realRampSpeed--;
+                            else if (realRampSpeed < 0)
+                                realRampSpeed++;
+                        }
+                        else
+                            realRampSpeed = 0;
                     }
                     else
+                    {
                         realRampSpeed = 0;
+                    }
                 }
 
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 endRampTime = 0;
+                almostDoneRampingDown = false;
+                almostDoneRampingUp = false;
                 if (curdelay >= targetMs)
                 {
                     rampingup = false;
@@ -234,8 +260,9 @@ namespace Delay
 
         private void timer1_Tick(object sender, EventArgs e)
         {
+            double realRampSpeedPercent = 1.00 * realRampSpeed / realRampFactor;
             lblDebug1.Text = endRampTime.ToString();
-            lblDebug2.Text = realRampSpeed.ToString();
+            lblDebug2.Text = realRampSpeedPercent.ToString() + "%";
 
             if (buffer.BufferedBytes >= 0)
             {
@@ -319,6 +346,15 @@ namespace Delay
                 if (smoothchange)
                 {
                     realRampFactor = (int)numericUpDown1.Value;
+                    if (realRampFactor < 1)
+                    {
+                        realRampFactor = 1;
+                        smoothRampEnabled = false;
+                    }
+                    else
+                    {
+                        smoothRampEnabled = true;
+                    }
                     smoothchange = false;
                 }
             }
@@ -369,11 +405,15 @@ namespace Delay
                 rampingdown = false;
             }
             dumpMs = (int)(targetMs / txtDumps.Value);
+            almostDoneRampingUp = false;
+            almostDoneRampingDown = false;
         }
 
         private void txtSpeed_ValueChanged(object sender, EventArgs e)
         {
             rampSpeed = (int)txtSpeed.Value;
+            almostDoneRampingDown = false;
+            almostDoneRampingUp = false;
         }
 
         private void btnBuild_Click(object sender, EventArgs e)
@@ -604,6 +644,15 @@ namespace Delay
             if (!(rampingup || rampingdown))
             {
                 realRampFactor = (int)numericUpDown1.Value;
+                if(realRampFactor < 1)
+                {
+                    realRampFactor = 1;
+                    smoothRampEnabled = false;
+                }
+                else
+                {
+                    smoothRampEnabled = true;
+                }
             }
             else
             {
