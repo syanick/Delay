@@ -28,12 +28,14 @@ namespace Delay
         double silenceThreshold = 0;
         bool quickramp = false;
         int realRampSpeed = 0;
-        int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
+        int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp
         int endRampTime = 0;
         bool smoothchange = true;
         bool smoothRampEnabled = true;
         bool almostDoneRampingUp = false;
         bool almostDoneRampingDown = false;
+        int blinkSpeed = 2;
+        int blinkSpeedCount = 0;
 
         public Form1()
         {
@@ -300,13 +302,21 @@ namespace Delay
                 {
                     //we are ramping down
                     btnBuild.BackColor = Color.DarkGreen;
-                    if (btnExit.BackColor == Color.Yellow)
+                    if (blinkSpeedCount <= 0)
                     {
-                        btnExit.BackColor = Color.Olive;
+                        if (btnExit.BackColor == Color.Yellow)
+                        {
+                            btnExit.BackColor = Color.Olive;
+                        }
+                        else
+                        {
+                            btnExit.BackColor = Color.Yellow;
+                        }
+                        blinkSpeedCount = blinkSpeed;
                     }
                     else
                     {
-                        btnExit.BackColor = Color.Yellow;
+                        blinkSpeedCount--;
                     }
                     if (!targetRampedUp)
                     {
@@ -323,13 +333,22 @@ namespace Delay
                 {
                     //we are ramping up
                     btnExit.BackColor = Color.Olive;
-                    if (btnBuild.BackColor == Color.Lime && !quickramp)
+
+                    if (blinkSpeedCount <= 0)
                     {
-                        btnBuild.BackColor = Color.DarkGreen;
+                        if (btnBuild.BackColor == Color.Lime && !quickramp)
+                        {
+                            btnBuild.BackColor = Color.DarkGreen;
+                        }
+                        else
+                        {
+                            btnBuild.BackColor = Color.Lime;
+                        }
+                        blinkSpeedCount = blinkSpeed;
                     }
                     else
                     {
-                        btnBuild.BackColor = Color.Lime;
+                        blinkSpeedCount--;
                     }
                     timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
@@ -340,6 +359,7 @@ namespace Delay
             {
                 btnBuild.BackColor = Color.DarkGreen;
                 btnExit.BackColor = Color.Olive;
+                blinkSpeedCount = 0;
                 timetoRamp = new TimeSpan();
                 
                 //lblRampTimer.Text = "";
