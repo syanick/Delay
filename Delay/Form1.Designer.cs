@@ -299,11 +299,6 @@
             this.txtThreshold.Name = "txtThreshold";
             this.txtThreshold.Size = new System.Drawing.Size(75, 20);
             this.txtThreshold.TabIndex = 19;
-            this.txtThreshold.Value = new decimal(new int[] {
-            24,
-            0,
-            0,
-            -2147483648});
             // 
             // label6
             // 
@@ -317,16 +312,6 @@
             // numericUpDown1
             // 
             this.numericUpDown1.Location = new System.Drawing.Point(286, 66);
-            this.numericUpDown1.Maximum = new decimal(new int[] {
-            20,
-            0,
-            0,
-            0});
-            this.numericUpDown1.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
             this.numericUpDown1.Name = "numericUpDown1";
             this.numericUpDown1.Size = new System.Drawing.Size(62, 20);
             this.numericUpDown1.TabIndex = 20;
@@ -360,9 +345,9 @@
             this.lblDebug2.AutoSize = true;
             this.lblDebug2.Location = new System.Drawing.Point(195, 41);
             this.lblDebug2.Name = "lblDebug2";
-            this.lblDebug2.Size = new System.Drawing.Size(13, 13);
+            this.lblDebug2.Size = new System.Drawing.Size(21, 13);
             this.lblDebug2.TabIndex = 23;
-            this.lblDebug2.Text = "0";
+            this.lblDebug2.Text = "0%";
             // 
             // Form1
             // 
