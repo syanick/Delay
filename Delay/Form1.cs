@@ -31,7 +31,9 @@ namespace Delay
         int realRampSpeed = 0;
         double realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
         bool smoothchange = true;
-        
+
+        double Q = (1 / (double)3); // default Q value for low pass filter
+        BiQuadFilter[] filter;
 
         public Form1()
         {
@@ -69,11 +71,16 @@ namespace Delay
             input = new WaveInEvent();
             input.DeviceNumber = inputSelector.SelectedIndex;
             output.DeviceNumber = outputSelector.SelectedIndex;
-
+            
             
             input.WaveFormat = waveformat;
             
             input.DataAvailable += new EventHandler<WaveInEventArgs>(DataAvailable);
+            filter = new BiQuadFilter[waveformat.Channels];
+            for (int i = 0; i < filter.Length; i++)
+            {
+                filter[i] = BiQuadFilter.LowPassFilter(waveformat.SampleRate, waveformat.SampleRate /2 , (float)Q);
+            }
             
             output.Init(buffer);
             output.Pause();
@@ -170,7 +177,7 @@ namespace Delay
             {
                 rampingdown = false;
             }
-            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp)
+            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp && output.PlaybackState != PlaybackState.Playing)
             {
                 output.Play();
             }
@@ -378,19 +385,14 @@ namespace Delay
                 stretchfactor = 1.00;
                 realRampSpeed = 0;
             }
-            int blockalign = input.WaveFormat.BlockAlign;
+            float[][] inputSamples = BytesToSamples(inputbytes, waveformat);
+            float[][] outputSamples = new float[inputSamples.Length][];
 
             if (stretchfactor < 1)
             {
-                inputbytes = LowPass(inputbytes, waveformat.SampleRate / (2/stretchfactor),waveformat);
+                inputSamples = LowPass(inputSamples, waveformat.SampleRate / (2 / stretchfactor), waveformat.SampleRate);
             }
-            else
-            {
-                inputbytes = LowPass(inputbytes, waveformat.SampleRate / 2, waveformat);
-            }
-
-            float[][] inputSamples = BytesToSamples(inputbytes, waveformat);
-            float[][] outputSamples = new float[inputSamples.Length][];
+            
             for (int c = 0; c < outputSamples.Length; c++)
             {
                 outputSamples[c] = new float[(int)(inputSamples[c].Length * stretchfactor)];
@@ -413,19 +415,9 @@ namespace Delay
             }
             if (stretchfactor > 1)
             {
-                for (int i = 0; i < outputSamples.Length; i++)
-                {
-                    outputSamples[i] = LowPass(outputSamples[i], waveformat.SampleRate / (2 * (stretchfactor)), waveformat.SampleRate);
-                }
+                outputSamples = LowPass(outputSamples, waveformat.SampleRate / (2 * (stretchfactor)), waveformat.SampleRate);
             }
-            else
-            {
-                for (int i = 0; i < outputSamples.Length; i++)
-                {
-                    outputSamples[i] = LowPass(outputSamples[i], waveformat.SampleRate /2 , waveformat.SampleRate);
-                }
-            }
-            return SamplesToBytes(outputSamples, waveformat);
+                        return SamplesToBytes(outputSamples, waveformat);
 
 
         }
@@ -583,36 +575,33 @@ namespace Delay
 
         }
 
-        
+        public float[][] LowPass(float[][] source, double Frequency, int SampleRate, double Q)
+        {
+            for (int ch = 0; ch < source.Length; ch++)
+            {
+                filter[ch].SetLowPassFilter(SampleRate, (float)Frequency, (float)Q);
+                for (int i = 0; i < source[ch].Length; i++)
+                {
+                    source[ch][i] = filter[ch].Transform(source[ch][i]);
+                }    
+            }
+            return source;
+        }
+
+        public float[][] LowPass(float[][] input, double Frequency, int SampleRate)
+        {
+            return LowPass(input, Frequency, SampleRate, Q);
+        }
         public byte[] LowPass(byte[] source, double Frequency, WaveFormat waveformat, double Q)
         {
             var sourceSamples = BytesToSamples(source, waveformat);
-            for (int ch = 0; ch < sourceSamples.Length; ch++)
-            {
-                LowPass(sourceSamples[ch], Frequency, waveformat.SampleRate, Q);
-            }
+            LowPass(sourceSamples, Frequency, waveformat.SampleRate, Q);
             return SamplesToBytes(sourceSamples, waveformat);
         }
 
-        public byte[] LowPass(byte[] source, double frequency, WaveFormat waveformat)
+        public byte[] LowPass(byte[] source, double Frequency, WaveFormat waveformat)
         {
-            return LowPass(source, frequency, waveformat, 1 / (float)Math.Sqrt(2));
+            return LowPass(source, Frequency, waveformat, Q);
         }
-
-        public float[] LowPass(float[] input, double Frequency, int SampleRate)
-        {
-            return LowPass(input, Frequency, SampleRate, 1 / Math.Sqrt(2));
-        }
-
-        public float[] LowPass(float[] input, double Frequency, int SampleRate, double Q)
-        {
-            var filter = BiQuadFilter.LowPassFilter(SampleRate, (float)Frequency, (float)Q);
-            for (int i = 1; i < input.Length - 1; i++)
-            {
-                filter.Transform(input[i]);
-            }
-            return input;
-        }
-        
     }
 }
