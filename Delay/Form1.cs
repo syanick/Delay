@@ -39,7 +39,7 @@ namespace Delay
         int blinkSpeedCount = 0;
 
 
-        double Q = (1 / (double)3); // default Q value for low pass filter
+        double Q = (1 / (double)2); // default Q value for low pass filter
         BiQuadFilter[] filter;
 
         public Form1()
@@ -61,7 +61,7 @@ namespace Delay
             }
             txtTarget.DecimalPlaces = 1;
             buffer = new BufferedWaveProvider(waveformat);
-            buffer.BufferDuration = new TimeSpan(1, 0, 0);
+            buffer.BufferDuration = new TimeSpan(0, 15, 0);
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
             dumpMs = (int)(targetMs / txtDumps.Value);
@@ -525,7 +525,14 @@ namespace Delay
             {
                 outputSamples = LowPass(outputSamples, waveformat.SampleRate / (2 * (stretchfactor)), waveformat.SampleRate);
             }
-                        return SamplesToBytes(outputSamples, waveformat);
+            else if (stretchfactor == 1)
+            {
+                for (int i = 0; i < filter.Length; i++)
+                {
+                    filter[i].SetLowPassFilter(waveformat.SampleRate, waveformat.SampleRate / 2, (float)Q);
+                }
+            }
+            return SamplesToBytes(outputSamples, waveformat);
 
 
         }
