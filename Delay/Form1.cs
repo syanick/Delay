@@ -640,7 +640,7 @@ namespace Delay
 
             if (curdelay > dumpMs && dumps > 1)
             {
-                tempbufferbytes = buffer.BufferedBytes - ((waveformat.AverageBytesPerSecond * targetMs) / (1000 * dumps));//* (dumps - 1) / dumps / waveformat.BlockAlign * waveformat.BlockAlign;
+                tempbufferbytes = buffer.BufferedBytes - ((waveformat.AverageBytesPerSecond * (targetMs / 1000) / dumps));//* (dumps - 1) / dumps / waveformat.BlockAlign * waveformat.BlockAlign;
                 var tempbuffer = new byte[buffer.BufferedBytes];
 
                 tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
