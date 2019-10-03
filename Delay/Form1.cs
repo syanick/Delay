@@ -36,8 +36,7 @@ namespace Delay
         bool smoothRampEnabled = true;
         bool almostDoneRampingUp = false;
         bool almostDoneRampingDown = false;
-        int blinkSpeed = 2;
-        int blinkSpeedCount = 0;
+        int blinkInterval = 500;
 
 
         double Q = (1 / (double)2); // default Q value for low pass filter
@@ -312,23 +311,7 @@ namespace Delay
                 if (rampingdown)
                 {
                     //we are ramping down
-                    btnBuild.BackColor = Color.DarkGreen;
-                    if (blinkSpeedCount <= 0)
-                    {
-                        if (btnExit.BackColor == Color.Yellow)
-                        {
-                            btnExit.BackColor = Color.Olive;
-                        }
-                        else
-                        {
-                            btnExit.BackColor = Color.Yellow;
-                        }
-                        blinkSpeedCount = blinkSpeed;
-                    }
-                    else
-                    {
-                        blinkSpeedCount--;
-                    }
+                    
                     if (!targetRampedUp)
                     {
                         timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (realRampSpeed / (100.0 * realRampFactor))));
@@ -343,24 +326,7 @@ namespace Delay
                 else if (rampingup)
                 {
                     //we are ramping up
-                    btnExit.BackColor = Color.Olive;
-
-                    if (blinkSpeedCount <= 0)
-                    {
-                        if (btnBuild.BackColor == Color.Lime && !quickramp)
-                        {
-                            btnBuild.BackColor = Color.DarkGreen;
-                        }
-                        else
-                        {
-                            btnBuild.BackColor = Color.Lime;
-                        }
-                        blinkSpeedCount = blinkSpeed;
-                    }
-                    else
-                    {
-                        blinkSpeedCount--;
-                    }
+                    
                     timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
@@ -368,9 +334,6 @@ namespace Delay
             }
             else
             {
-                btnBuild.BackColor = Color.DarkGreen;
-                btnExit.BackColor = Color.Olive;
-                blinkSpeedCount = 0;
                 timetoRamp = new TimeSpan();
 
                 //lblRampTimer.Text = "";
@@ -737,6 +700,42 @@ namespace Delay
         public byte[] LowPass(byte[] source, double Frequency, WaveFormat waveformat)
         {
             return LowPass(source, Frequency, waveformat, Q);
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            
+            if (rampingdown)
+            {
+                btnBuild.BackColor = Color.DarkGreen;
+                if (btnExit.BackColor == Color.Yellow)
+                {
+                    btnExit.BackColor = Color.Olive;
+                }
+                else
+                {
+                    btnExit.BackColor = Color.Yellow;
+                }
+            }
+            else if (rampingup)
+            {
+                btnExit.BackColor = Color.Olive;
+                if (btnBuild.BackColor == Color.Lime && !quickramp)
+                {
+                    btnBuild.BackColor = Color.DarkGreen;
+                }
+                else
+                {
+                    btnBuild.BackColor = Color.Lime;
+                }
+            }
+            else
+            {
+                btnBuild.BackColor = Color.DarkGreen;
+                btnExit.BackColor = Color.Olive;
+            }
+
+
         }
     }
 }
