@@ -67,6 +67,7 @@ namespace Delay
             dumpMs = (int)(targetMs / txtDumps.Value);
             numericUpDown1.Value = realRampFactor;
             txtThreshold.Value = Convert.ToDecimal(silenceThreshold);
+            timer2.Interval = blinkInterval;
             InitializeAudio();
         }
 
