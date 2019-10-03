@@ -220,7 +220,7 @@
             // 
             // txtDumps
             // 
-            this.txtDumps.Enabled = false;
+            this.txtDumps.Cursor = System.Windows.Forms.Cursors.Default;
             this.txtDumps.Location = new System.Drawing.Point(308, 306);
             this.txtDumps.Minimum = new decimal(new int[] {
             1,
@@ -230,7 +230,6 @@
             this.txtDumps.Name = "txtDumps";
             this.txtDumps.Size = new System.Drawing.Size(40, 20);
             this.txtDumps.TabIndex = 13;
-            this.txtDumps.UseWaitCursor = true;
             this.txtDumps.Value = new decimal(new int[] {
             1,
             0,

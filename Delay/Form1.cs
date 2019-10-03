@@ -26,6 +26,7 @@ namespace Delay
         int buffcumulative;
         int buffavgcounter = 0;
         int dumpMs = 0;
+        int dumps = 1;
         double silenceThreshold = 0;
         bool quickramp = false;
         int realRampSpeed = 0;
@@ -634,11 +635,25 @@ namespace Delay
         private void btnDump_Click(object sender, EventArgs e)
         {
             input.StopRecording();
-            output.Pause();
-            
-            buffer.ClearBuffer();
-            
-            
+            //output.Stop();
+
+            int tempbufferbytes;
+
+            if (curdelay > dumpMs && dumps > 1)
+            {
+                tempbufferbytes = buffer.BufferedBytes - ((waveformat.AverageBytesPerSecond * targetMs) / (1000 * dumps));//* (dumps - 1) / dumps / waveformat.BlockAlign * waveformat.BlockAlign;
+                var tempbuffer = new byte[buffer.BufferedBytes];
+
+                tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
+
+                buffer.ClearBuffer();
+
+                buffer.AddSamples(tempbuffer, 0, tempbufferbytes);
+            }
+            else
+            {
+                buffer.ClearBuffer();
+            }
 
 
             curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
@@ -655,6 +670,7 @@ namespace Delay
         private void numericUpDown3_ValueChanged(object sender, EventArgs e)
         {
             dumpMs = (int)(targetMs / txtDumps.Value);
+            dumps = (int)txtDumps.Value;
         }
 
         private void btnCough_MouseDown(object sender, EventArgs e)
