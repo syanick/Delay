@@ -36,8 +36,7 @@ namespace Delay
         bool smoothRampEnabled = true;
         bool almostDoneRampingUp = false;
         bool almostDoneRampingDown = false;
-        int blinkSpeed = 2;
-        int blinkSpeedCount = 0;
+        int blinkInterval = 500;
 
 
         double Q = (1 / (double)2); // default Q value for low pass filter
@@ -79,17 +78,17 @@ namespace Delay
             input = new WaveInEvent();
             input.DeviceNumber = inputSelector.SelectedIndex;
             output.DeviceNumber = outputSelector.SelectedIndex;
-            
-            
+
+
             input.WaveFormat = waveformat;
-            
+
             input.DataAvailable += new EventHandler<WaveInEventArgs>(DataAvailable);
             filter = new BiQuadFilter[waveformat.Channels];
             for (int i = 0; i < filter.Length; i++)
             {
-                filter[i] = BiQuadFilter.LowPassFilter(waveformat.SampleRate, waveformat.SampleRate /2 , (float)Q);
+                filter[i] = BiQuadFilter.LowPassFilter(waveformat.SampleRate, waveformat.SampleRate / 2, (float)Q);
             }
-            
+
             output.Init(buffer);
             output.Pause();
             try
@@ -106,7 +105,7 @@ namespace Delay
         {
             if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
             {
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold);
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 if (smoothRampEnabled)
@@ -138,23 +137,23 @@ namespace Delay
                 {
                     realRampSpeed = rampSpeed;
                 }
-                
+
                 //ramping = false;
                 if (curdelay >= targetMs)
                 {
                     rampingup = false;
                     quickramp = false;
-                    if(output.PlaybackState == PlaybackState.Paused)
+                    if (output.PlaybackState == PlaybackState.Paused)
                     {
                         output.Play();
                     }
                 }
             }
-            
+
             else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
             {
                 //Ramp down to the target
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold);
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
 
@@ -196,16 +195,16 @@ namespace Delay
                     realRampSpeed = -1 * rampSpeed;
                 }
 
-                if ((curdelay <= targetMs && targetRampedUp)||curdelay <= output.DesiredLatency)
+                if ((curdelay <= targetMs && targetRampedUp) || curdelay <= output.DesiredLatency)
                 {
                     rampingdown = false;
                 }
             }
             else
             {
-                if(realRampSpeed == 0)
+                if (realRampSpeed == 0)
                 {
-                    buffer.AddSamples(Stretch(e.Buffer,1.00),0,e.BytesRecorded);
+                    buffer.AddSamples(Stretch(e.Buffer, 1.00), 0, e.BytesRecorded);
                 }
                 else
                 {
@@ -256,9 +255,9 @@ namespace Delay
                 output.Play();
             }
 
-            
-            
-            
+
+
+
         }
 
         private void outputSelector_SelectedIndexChanged(object sender, EventArgs e)
@@ -305,30 +304,14 @@ namespace Delay
                         btnDump.BackColor = Color.DarkRed;
                     }
                 }
-                                             
+
             }
             if (rampingup || rampingdown)
             {
                 if (rampingdown)
                 {
                     //we are ramping down
-                    btnBuild.BackColor = Color.DarkGreen;
-                    if (blinkSpeedCount <= 0)
-                    {
-                        if (btnExit.BackColor == Color.Yellow)
-                        {
-                            btnExit.BackColor = Color.Olive;
-                        }
-                        else
-                        {
-                            btnExit.BackColor = Color.Yellow;
-                        }
-                        blinkSpeedCount = blinkSpeed;
-                    }
-                    else
-                    {
-                        blinkSpeedCount--;
-                    }
+                    
                     if (!targetRampedUp)
                     {
                         timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (realRampSpeed / (100.0 * realRampFactor))));
@@ -337,42 +320,22 @@ namespace Delay
                     {
                         timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - targetMs) / (realRampSpeed / (100.0 * realRampFactor))));
                     }
-                    
+
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 else if (rampingup)
                 {
                     //we are ramping up
-                    btnExit.BackColor = Color.Olive;
-
-                    if (blinkSpeedCount <= 0)
-                    {
-                        if (btnBuild.BackColor == Color.Lime && !quickramp)
-                        {
-                            btnBuild.BackColor = Color.DarkGreen;
-                        }
-                        else
-                        {
-                            btnBuild.BackColor = Color.Lime;
-                        }
-                        blinkSpeedCount = blinkSpeed;
-                    }
-                    else
-                    {
-                        blinkSpeedCount--;
-                    }
+                    
                     timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
-                
+
             }
             else
             {
-                btnBuild.BackColor = Color.DarkGreen;
-                btnExit.BackColor = Color.Olive;
-                blinkSpeedCount = 0;
                 timetoRamp = new TimeSpan();
-                
+
                 //lblRampTimer.Text = "";
                 if (smoothchange)
                 {
@@ -393,7 +356,7 @@ namespace Delay
             {
                 targetMs = output.DesiredLatency;
             }
-            
+
             if (targetRampedUp && targetMs < curdelay && rampingdown)
             {
                 progressBar1.Minimum = targetMs;
@@ -423,8 +386,8 @@ namespace Delay
 
         private void txtTarget_ValueChanged(object sender, EventArgs e)
         {
-            targetMs = (int)(txtTarget.Value*1000);
-            
+            targetMs = (int)(txtTarget.Value * 1000);
+
             if (targetRampedUp && curdelay > targetMs)
             {
                 rampingdown = true;
@@ -479,9 +442,9 @@ namespace Delay
             }
         }
 
-        
-        
-           
+
+
+
         private byte[] Stretch(byte[] inputbytes, double stretchfactor)
         {
             return (Stretch(inputbytes, stretchfactor, 0));
@@ -489,7 +452,7 @@ namespace Delay
 
         private byte[] Stretch(byte[] inputbytes, double stretchfactor, double silenceThreshold)
         {
-            if (dBFS(AvgAudioLevel(inputbytes, waveformat))>silenceThreshold)
+            if (dBFS(AvgAudioLevel(inputbytes, waveformat)) > silenceThreshold)
             {
                 stretchfactor = 1.00;
                 realRampSpeed = 0;
@@ -501,12 +464,12 @@ namespace Delay
             {
                 inputSamples = LowPass(inputSamples, waveformat.SampleRate / (2 / stretchfactor), waveformat.SampleRate);
             }
-            
+
             for (int c = 0; c < outputSamples.Length; c++)
             {
                 outputSamples[c] = new float[(int)(inputSamples[c].Length * stretchfactor)];
                 outputSamples[c][0] = inputSamples[c][0];
-                for (int i = 1; i < outputSamples[c].Length - 1 ; i++)
+                for (int i = 1; i < outputSamples[c].Length - 1; i++)
                 {
                     double sampleTarget = (((double)(i * inputSamples[c].Length) / outputSamples[c].Length));
                     if (sampleTarget % 1 == 0)
@@ -520,7 +483,7 @@ namespace Delay
                         outputSamples[c][i] = inputSamples[c][(int)sampleTarget] + (float)(interp * diff);
                     }
                 }
-                outputSamples[c][outputSamples[c].Length-1] = inputSamples[c][inputSamples[c].Length-1];
+                outputSamples[c][outputSamples[c].Length - 1] = inputSamples[c][inputSamples[c].Length - 1];
             }
             if (stretchfactor > 1)
             {
@@ -541,18 +504,18 @@ namespace Delay
         private float[] BytesToMonoSamples(byte[] buffer, WaveFormat waveformat)
         {
             float[] samples = new float[buffer.Length / waveformat.BlockAlign];
-            
+
             for (int i = 0; i < samples.Length; i++)
             {
-                
-                int sample=0;
+
+                int sample = 0;
                 //one frame
                 for (int j = 0; j < waveformat.Channels; j++)
                 {
                     //one channel in the frame
                     int monosample = 0;
                     //int k = 0; k < waveformat.BlockAlign/waveformat.Channels; k++
-                    for (int k = 0; k < waveformat.BlockAlign/waveformat.Channels; k++)
+                    for (int k = 0; k < waveformat.BlockAlign / waveformat.Channels; k++)
                     {
                         //one byte in the channel
                         monosample = monosample << 8;
@@ -582,14 +545,14 @@ namespace Delay
                     for (int k = waveformat.BitsPerSample / 8; k > 0; k--)
                     {
                         monosample = monosample << 8;
-                        monosample += buffer[(j * waveformat.BlockAlign) + (i * (waveformat.BlockAlign / waveformat.Channels)) + (k-1)];
+                        monosample += buffer[(j * waveformat.BlockAlign) + (i * (waveformat.BlockAlign / waveformat.Channels)) + (k - 1)];
                     }
-                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2)-1;
+                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2) - 1;
                     if (monosample > maxint)
                     {
-                        monosample = -1 - ((maxint+1)-(monosample - maxint));
+                        monosample = -1 - ((maxint + 1) - (monosample - maxint));
                     }
-                    channel[j] = monosample / ((float)Math.Pow(2,waveformat.BitsPerSample));
+                    channel[j] = monosample / ((float)Math.Pow(2, waveformat.BitsPerSample));
                 }
                 samples[i] = channel;
             }
@@ -604,7 +567,7 @@ namespace Delay
             {
                 for (int j = 0; j < samples[0].Length; j++)
                 {
-                    int monosample = (int)(samples[i][j]* ((float)Math.Pow(2, waveformat.BitsPerSample)));
+                    int monosample = (int)(samples[i][j] * ((float)Math.Pow(2, waveformat.BitsPerSample)));
                     //int k = waveformat.BitsPerSample / 8; k > 0; k--
                     for (int k = 0; k < waveformat.BlockAlign / waveformat.Channels; k++)
                     {
@@ -627,7 +590,7 @@ namespace Delay
             return (float)Math.Sqrt(avgLevel / samples.Length);
         }
 
-        private double dBFS (float level)
+        private double dBFS(float level)
         {
             return 20 * Math.Log10((double)level);
         }
@@ -681,7 +644,7 @@ namespace Delay
         {
             input.StartRecording();
             btnCough.BackColor = Color.DarkBlue;
-            if(targetRampedUp && curdelay < targetMs)
+            if (targetRampedUp && curdelay < targetMs)
             {
                 rampingup = true;
             }
@@ -694,7 +657,7 @@ namespace Delay
             if (!(rampingup || rampingdown))
             {
                 realRampFactor = (int)numericUpDown1.Value;
-                if(realRampFactor < 1)
+                if (realRampFactor < 1)
                 {
                     realRampFactor = 1;
                     smoothRampEnabled = false;
@@ -708,7 +671,7 @@ namespace Delay
             {
                 smoothchange = true;
             }
-            
+
 
         }
 
@@ -720,7 +683,7 @@ namespace Delay
                 for (int i = 0; i < source[ch].Length; i++)
                 {
                     source[ch][i] = filter[ch].Transform(source[ch][i]);
-                }    
+                }
             }
             return source;
         }
@@ -739,6 +702,42 @@ namespace Delay
         public byte[] LowPass(byte[] source, double Frequency, WaveFormat waveformat)
         {
             return LowPass(source, Frequency, waveformat, Q);
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            
+            if (rampingdown)
+            {
+                btnBuild.BackColor = Color.DarkGreen;
+                if (btnExit.BackColor == Color.Yellow)
+                {
+                    btnExit.BackColor = Color.Olive;
+                }
+                else
+                {
+                    btnExit.BackColor = Color.Yellow;
+                }
+            }
+            else if (rampingup)
+            {
+                btnExit.BackColor = Color.Olive;
+                if (btnBuild.BackColor == Color.Lime && !quickramp)
+                {
+                    btnBuild.BackColor = Color.DarkGreen;
+                }
+                else
+                {
+                    btnBuild.BackColor = Color.Lime;
+                }
+            }
+            else
+            {
+                btnBuild.BackColor = Color.DarkGreen;
+                btnExit.BackColor = Color.Olive;
+            }
+
+
         }
     }
 }
