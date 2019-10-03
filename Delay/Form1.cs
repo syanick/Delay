@@ -635,7 +635,6 @@ namespace Delay
         private void btnDump_Click(object sender, EventArgs e)
         {
             input.StopRecording();
-            //output.Stop();
 
             int tempbufferbytes;
 
