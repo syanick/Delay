@@ -685,6 +685,8 @@ namespace Delay
             {
                 rampingup = true;
             }
+            almostDoneRampingDown = false;
+            almostDoneRampingUp = false;
         }
 
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
