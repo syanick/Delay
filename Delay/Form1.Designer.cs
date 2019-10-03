@@ -51,6 +51,8 @@
             this.label6 = new System.Windows.Forms.Label();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.label7 = new System.Windows.Forms.Label();
+            this.lblDebug1 = new System.Windows.Forms.Label();
+            this.lblDebug2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
@@ -218,7 +220,7 @@
             // 
             // txtDumps
             // 
-            this.txtDumps.Enabled = false;
+            this.txtDumps.Cursor = System.Windows.Forms.Cursors.Default;
             this.txtDumps.Location = new System.Drawing.Point(308, 306);
             this.txtDumps.Minimum = new decimal(new int[] {
             1,
@@ -228,7 +230,6 @@
             this.txtDumps.Name = "txtDumps";
             this.txtDumps.Size = new System.Drawing.Size(40, 20);
             this.txtDumps.TabIndex = 13;
-            this.txtDumps.UseWaitCursor = true;
             this.txtDumps.Value = new decimal(new int[] {
             1,
             0,
@@ -297,11 +298,6 @@
             this.txtThreshold.Name = "txtThreshold";
             this.txtThreshold.Size = new System.Drawing.Size(75, 20);
             this.txtThreshold.TabIndex = 19;
-            this.txtThreshold.Value = new decimal(new int[] {
-            24,
-            0,
-            0,
-            -2147483648});
             // 
             // label6
             // 
@@ -315,16 +311,6 @@
             // numericUpDown1
             // 
             this.numericUpDown1.Location = new System.Drawing.Point(286, 66);
-            this.numericUpDown1.Maximum = new decimal(new int[] {
-            20,
-            0,
-            0,
-            0});
-            this.numericUpDown1.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
             this.numericUpDown1.Name = "numericUpDown1";
             this.numericUpDown1.Size = new System.Drawing.Size(62, 20);
             this.numericUpDown1.TabIndex = 20;
@@ -344,11 +330,31 @@
             this.label7.TabIndex = 21;
             this.label7.Text = "Ramp Smoothing";
             // 
+            // lblDebug1
+            // 
+            this.lblDebug1.AutoSize = true;
+            this.lblDebug1.Location = new System.Drawing.Point(195, 15);
+            this.lblDebug1.Name = "lblDebug1";
+            this.lblDebug1.Size = new System.Drawing.Size(13, 13);
+            this.lblDebug1.TabIndex = 22;
+            this.lblDebug1.Text = "0";
+            // 
+            // lblDebug2
+            // 
+            this.lblDebug2.AutoSize = true;
+            this.lblDebug2.Location = new System.Drawing.Point(195, 41);
+            this.lblDebug2.Name = "lblDebug2";
+            this.lblDebug2.Size = new System.Drawing.Size(21, 13);
+            this.lblDebug2.TabIndex = 23;
+            this.lblDebug2.Text = "0%";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(383, 388);
+            this.Controls.Add(this.lblDebug2);
+            this.Controls.Add(this.lblDebug1);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.numericUpDown1);
             this.Controls.Add(this.txtThreshold);
@@ -407,6 +413,8 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.NumericUpDown numericUpDown1;
         private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label lblDebug1;
+        private System.Windows.Forms.Label lblDebug2;
     }
 }
 

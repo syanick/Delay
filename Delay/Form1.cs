@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using NAudio.Wave;
+using NAudio.Dsp;
 
 
 namespace Delay
@@ -25,12 +26,22 @@ namespace Delay
         int buffcumulative;
         int buffavgcounter = 0;
         int dumpMs = 0;
+        int dumps = 1;
         double silenceThreshold = 0;
         bool quickramp = false;
         int realRampSpeed = 0;
-        int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp -- make it an even number
+        int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp
+        int endRampTime = 0;
         bool smoothchange = true;
-        
+        bool smoothRampEnabled = true;
+        bool almostDoneRampingUp = false;
+        bool almostDoneRampingDown = false;
+        int blinkSpeed = 2;
+        int blinkSpeedCount = 0;
+
+
+        double Q = (1 / (double)2); // default Q value for low pass filter
+        BiQuadFilter[] filter;
 
         public Form1()
         {
@@ -51,7 +62,7 @@ namespace Delay
             }
             txtTarget.DecimalPlaces = 1;
             buffer = new BufferedWaveProvider(waveformat);
-            buffer.BufferDuration = new TimeSpan(1, 0, 0);
+            buffer.BufferDuration = new TimeSpan(0, 15, 0);
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
             dumpMs = (int)(targetMs / txtDumps.Value);
@@ -69,11 +80,16 @@ namespace Delay
             input.DeviceNumber = inputSelector.SelectedIndex;
             output.DeviceNumber = outputSelector.SelectedIndex;
 
-            
+
             input.WaveFormat = waveformat;
-            
+
             input.DataAvailable += new EventHandler<WaveInEventArgs>(DataAvailable);
-            
+            filter = new BiQuadFilter[waveformat.Channels];
+            for (int i = 0; i < filter.Length; i++)
+            {
+                filter[i] = BiQuadFilter.LowPassFilter(waveformat.SampleRate, waveformat.SampleRate / 2, (float)Q);
+            }
+
             output.Init(buffer);
             output.Pause();
             try
@@ -90,67 +106,133 @@ namespace Delay
         {
             if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
             {
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now 
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                if ((targetMs - (curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor))))) > (realRampSpeed * 20))
+                if (smoothRampEnabled)
                 {
-                    if(realRampSpeed < (rampSpeed * realRampFactor))
-                        realRampSpeed++;
-                    else if(realRampSpeed > (rampSpeed * realRampFactor))
-                        realRampSpeed--;
+                    if ((targetMs - curdelay) > endRampTime && !almostDoneRampingUp)
+                    {
+                        if (realRampSpeed < (rampSpeed * realRampFactor))
+                            realRampSpeed++;
+                        else if (realRampSpeed > (rampSpeed * realRampFactor))
+                            realRampSpeed--;
+
+                        double tempEndRampTime = 0;
+                        for (int i = 0; i < realRampSpeed; i++)
+                        {
+                            tempEndRampTime += 1.000 * i / realRampFactor;
+                        }
+                        endRampTime = (int)tempEndRampTime;
+                    }
+                    else
+                    {
+                        if (realRampSpeed > realRampFactor)
+                            realRampSpeed--;
+                        else
+                            realRampSpeed = realRampFactor;
+                        almostDoneRampingUp = true;
+                    }
                 }
                 else
                 {
-                    if(realRampSpeed > (realRampFactor / 2))
-                        realRampSpeed--;
-                    else
-                        realRampSpeed = realRampFactor / 2;
+                    realRampSpeed = rampSpeed;
                 }
-                
+
                 //ramping = false;
                 if (curdelay >= targetMs)
                 {
                     rampingup = false;
                     quickramp = false;
-                    if(output.PlaybackState == PlaybackState.Paused)
+                    if (output.PlaybackState == PlaybackState.Paused)
                     {
                         output.Play();
                     }
                 }
             }
-            
+
             else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
             {
                 //Ramp down to the target
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed/(100.0 * realRampFactor))), silenceThreshold); //removing this for now , silenceThreshold);
+                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                if ((-1 * curdelay * (1.00 + (realRampSpeed/(100.0 * realRampFactor)))) < ((realRampSpeed * 20) - output.DesiredLatency))
+
+                int realTarget = 0;
+                if (targetRampedUp)
+                    realTarget = targetMs;
+
+                if (smoothRampEnabled)
                 {
-                    if(realRampSpeed > (-1 * rampSpeed * realRampFactor))
-                        realRampSpeed--;
-                    else if(realRampSpeed < (-1 * rampSpeed * realRampFactor))
-                        realRampSpeed++;
+                    if ((realTarget - curdelay) < endRampTime && !almostDoneRampingDown)
+                    {
+                        if (realRampSpeed > (-1 * rampSpeed * realRampFactor))
+                            realRampSpeed--;
+                        else if (realRampSpeed < (-1 * rampSpeed * realRampFactor))
+                            realRampSpeed++;
+
+
+                        double tempEndRampTime = 0 - output.DesiredLatency;
+                        if (targetRampedUp)
+                            tempEndRampTime = 0;
+
+                        for (int i = 0; i > realRampSpeed; i--)
+                        {
+                            tempEndRampTime += 1.000 * i / realRampFactor;
+                        }
+                        endRampTime = (int)tempEndRampTime;
+                    }
+                    else
+                    {
+                        if (realRampSpeed < (-1 * realRampFactor))
+                            realRampSpeed++;
+                        else
+                            realRampSpeed = -1 * realRampFactor;
+                        almostDoneRampingDown = true;
+                    }
                 }
                 else
                 {
-                    if(realRampSpeed < (-1 * (realRampFactor / 2)))
-                        realRampSpeed++;
-                    else
-                        realRampSpeed = -1 * (realRampFactor / 2);
+                    realRampSpeed = -1 * rampSpeed;
                 }
 
-                if ((curdelay <= targetMs && targetRampedUp)||curdelay <= output.DesiredLatency)
+                if ((curdelay <= targetMs && targetRampedUp) || curdelay <= output.DesiredLatency)
                 {
                     rampingdown = false;
                 }
             }
             else
             {
-                buffer.AddSamples(Stretch(e.Buffer,1.00),0,e.BytesRecorded);
-                realRampSpeed = 0;
+                if (realRampSpeed == 0)
+                {
+                    buffer.AddSamples(Stretch(e.Buffer, 1.00), 0, e.BytesRecorded);
+                }
+                else
+                {
+                    if (smoothRampEnabled)
+                    {
+                        if (curdelay > 200)
+                        {
+                            var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
+                            buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                            if (realRampSpeed > 0)
+                                realRampSpeed--;
+                            else if (realRampSpeed < 0)
+                                realRampSpeed++;
+                        }
+                        else
+                            realRampSpeed = 0;
+                    }
+                    else
+                    {
+                        realRampSpeed = 0;
+                    }
+                }
+
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                endRampTime = 0;
+                almostDoneRampingDown = false;
+                almostDoneRampingUp = false;
                 if (curdelay >= targetMs)
                 {
                     rampingup = false;
@@ -169,14 +251,14 @@ namespace Delay
             {
                 rampingdown = false;
             }
-            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp)
+            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp && output.PlaybackState != PlaybackState.Playing)
             {
                 output.Play();
             }
 
-            
-            
-            
+
+
+
         }
 
         private void outputSelector_SelectedIndexChanged(object sender, EventArgs e)
@@ -191,6 +273,10 @@ namespace Delay
 
         private void timer1_Tick(object sender, EventArgs e)
         {
+            double realRampSpeedPercent = 1.00 * realRampSpeed / realRampFactor;
+            lblDebug1.Text = endRampTime.ToString();
+            lblDebug2.Text = realRampSpeedPercent.ToString() + "%";
+
             if (buffer.BufferedBytes >= 0)
             {
                 //curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
@@ -219,7 +305,7 @@ namespace Delay
                         btnDump.BackColor = Color.DarkRed;
                     }
                 }
-                                             
+
             }
             if (rampingup || rampingdown)
             {
@@ -227,13 +313,21 @@ namespace Delay
                 {
                     //we are ramping down
                     btnBuild.BackColor = Color.DarkGreen;
-                    if (btnExit.BackColor == Color.Yellow)
+                    if (blinkSpeedCount <= 0)
                     {
-                        btnExit.BackColor = Color.Olive;
+                        if (btnExit.BackColor == Color.Yellow)
+                        {
+                            btnExit.BackColor = Color.Olive;
+                        }
+                        else
+                        {
+                            btnExit.BackColor = Color.Yellow;
+                        }
+                        blinkSpeedCount = blinkSpeed;
                     }
                     else
                     {
-                        btnExit.BackColor = Color.Yellow;
+                        blinkSpeedCount--;
                     }
                     if (!targetRampedUp)
                     {
@@ -243,36 +337,55 @@ namespace Delay
                     {
                         timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - targetMs) / (realRampSpeed / (100.0 * realRampFactor))));
                     }
-                    
+
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 else if (rampingup)
                 {
                     //we are ramping up
                     btnExit.BackColor = Color.Olive;
-                    if (btnBuild.BackColor == Color.Lime && !quickramp)
+
+                    if (blinkSpeedCount <= 0)
                     {
-                        btnBuild.BackColor = Color.DarkGreen;
+                        if (btnBuild.BackColor == Color.Lime && !quickramp)
+                        {
+                            btnBuild.BackColor = Color.DarkGreen;
+                        }
+                        else
+                        {
+                            btnBuild.BackColor = Color.Lime;
+                        }
+                        blinkSpeedCount = blinkSpeed;
                     }
                     else
                     {
-                        btnBuild.BackColor = Color.Lime;
+                        blinkSpeedCount--;
                     }
                     timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
-                
+
             }
             else
             {
                 btnBuild.BackColor = Color.DarkGreen;
                 btnExit.BackColor = Color.Olive;
+                blinkSpeedCount = 0;
                 timetoRamp = new TimeSpan();
-                
+
                 //lblRampTimer.Text = "";
                 if (smoothchange)
                 {
                     realRampFactor = (int)numericUpDown1.Value;
+                    if (realRampFactor < 1)
+                    {
+                        realRampFactor = 1;
+                        smoothRampEnabled = false;
+                    }
+                    else
+                    {
+                        smoothRampEnabled = true;
+                    }
                     smoothchange = false;
                 }
             }
@@ -280,7 +393,7 @@ namespace Delay
             {
                 targetMs = output.DesiredLatency;
             }
-            
+
             if (targetRampedUp && targetMs < curdelay && rampingdown)
             {
                 progressBar1.Minimum = targetMs;
@@ -310,8 +423,8 @@ namespace Delay
 
         private void txtTarget_ValueChanged(object sender, EventArgs e)
         {
-            targetMs = (int)(txtTarget.Value*1000);
-            
+            targetMs = (int)(txtTarget.Value * 1000);
+
             if (targetRampedUp && curdelay > targetMs)
             {
                 rampingdown = true;
@@ -323,11 +436,15 @@ namespace Delay
                 rampingdown = false;
             }
             dumpMs = (int)(targetMs / txtDumps.Value);
+            almostDoneRampingUp = false;
+            almostDoneRampingDown = false;
         }
 
         private void txtSpeed_ValueChanged(object sender, EventArgs e)
         {
             rampSpeed = (int)txtSpeed.Value;
+            almostDoneRampingDown = false;
+            almostDoneRampingUp = false;
         }
 
         private void btnBuild_Click(object sender, EventArgs e)
@@ -362,9 +479,9 @@ namespace Delay
             }
         }
 
-        
-        
-           
+
+
+
         private byte[] Stretch(byte[] inputbytes, double stretchfactor)
         {
             return (Stretch(inputbytes, stretchfactor, 0));
@@ -372,57 +489,70 @@ namespace Delay
 
         private byte[] Stretch(byte[] inputbytes, double stretchfactor, double silenceThreshold)
         {
-            if (dBFS(AvgAudioLevel(inputbytes, waveformat))>silenceThreshold)
+            if (dBFS(AvgAudioLevel(inputbytes, waveformat)) > silenceThreshold)
             {
                 stretchfactor = 1.00;
                 realRampSpeed = 0;
             }
-            int blockalign = input.WaveFormat.BlockAlign;
-            int outputblocks = (int)((inputbytes.Length / blockalign) * stretchfactor);
-            byte[] outputbytes = new byte[outputblocks * blockalign];
+            float[][] inputSamples = BytesToSamples(inputbytes, waveformat);
+            float[][] outputSamples = new float[inputSamples.Length][];
+
             if (stretchfactor < 1)
             {
-                inputbytes = LowPass(inputbytes, waveformat.SampleRate / (2/stretchfactor),waveformat);
+                inputSamples = LowPass(inputSamples, waveformat.SampleRate / (2 / stretchfactor), waveformat.SampleRate);
             }
-            
-            byte[][] inputblocks = new byte[inputbytes.Length / blockalign][];
-            for (int i = 0; i < inputblocks.Length; i++)
+
+            for (int c = 0; c < outputSamples.Length; c++)
             {
-                byte[] block = new byte[blockalign];
-                for (int j = 0; j < blockalign; j++)
+                outputSamples[c] = new float[(int)(inputSamples[c].Length * stretchfactor)];
+                outputSamples[c][0] = inputSamples[c][0];
+                for (int i = 1; i < outputSamples[c].Length - 1; i++)
                 {
-                    block[j] = inputbytes[(i * blockalign) + j];
+                    double sampleTarget = (((double)(i * inputSamples[c].Length) / outputSamples[c].Length));
+                    if (sampleTarget % 1 == 0)
+                    {
+                        outputSamples[c][i] = inputSamples[c][(int)sampleTarget];
+                    }
+                    else
+                    {
+                        double interp = sampleTarget - (int)sampleTarget;
+                        float diff = inputSamples[c][(int)sampleTarget + 1] - inputSamples[c][(int)sampleTarget];
+                        outputSamples[c][i] = inputSamples[c][(int)sampleTarget] + (float)(interp * diff);
+                    }
                 }
-                inputblocks[i] = block;
+                outputSamples[c][outputSamples[c].Length - 1] = inputSamples[c][inputSamples[c].Length - 1];
             }
-            for (int i = 0; i < outputbytes.Length; i += blockalign)
+            if (stretchfactor > 1)
             {
-                int blocktarget = (int)(((float)i / outputbytes.Length) * inputblocks.Length);
-                for (int j = 0; j < blockalign; j++)
+                outputSamples = LowPass(outputSamples, waveformat.SampleRate / (2 * (stretchfactor)), waveformat.SampleRate);
+            }
+            else if (stretchfactor == 1)
+            {
+                for (int i = 0; i < filter.Length; i++)
                 {
-                    outputbytes[i + j] = inputblocks[blocktarget][j];
+                    filter[i].SetLowPassFilter(waveformat.SampleRate, waveformat.SampleRate / 2, (float)Q);
                 }
             }
-            return LowPass(outputbytes, waveformat.SampleRate/2,waveformat);
-            
-             
+            return SamplesToBytes(outputSamples, waveformat);
+
+
         }
 
         private float[] BytesToMonoSamples(byte[] buffer, WaveFormat waveformat)
         {
             float[] samples = new float[buffer.Length / waveformat.BlockAlign];
-            
+
             for (int i = 0; i < samples.Length; i++)
             {
-                
-                int sample=0;
+
+                int sample = 0;
                 //one frame
                 for (int j = 0; j < waveformat.Channels; j++)
                 {
                     //one channel in the frame
                     int monosample = 0;
                     //int k = 0; k < waveformat.BlockAlign/waveformat.Channels; k++
-                    for (int k = 0; k < waveformat.BlockAlign/waveformat.Channels; k++)
+                    for (int k = 0; k < waveformat.BlockAlign / waveformat.Channels; k++)
                     {
                         //one byte in the channel
                         monosample = monosample << 8;
@@ -452,14 +582,14 @@ namespace Delay
                     for (int k = waveformat.BitsPerSample / 8; k > 0; k--)
                     {
                         monosample = monosample << 8;
-                        monosample += buffer[(j * waveformat.BlockAlign) + (i * (waveformat.BlockAlign / waveformat.Channels)) + (k-1)];
+                        monosample += buffer[(j * waveformat.BlockAlign) + (i * (waveformat.BlockAlign / waveformat.Channels)) + (k - 1)];
                     }
-                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2)-1;
+                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2) - 1;
                     if (monosample > maxint)
                     {
-                        monosample = -1 - ((maxint+1)-(monosample - maxint));
+                        monosample = -1 - ((maxint + 1) - (monosample - maxint));
                     }
-                    channel[j] = monosample / ((float)Math.Pow(2,waveformat.BitsPerSample));
+                    channel[j] = monosample / ((float)Math.Pow(2, waveformat.BitsPerSample));
                 }
                 samples[i] = channel;
             }
@@ -474,7 +604,7 @@ namespace Delay
             {
                 for (int j = 0; j < samples[0].Length; j++)
                 {
-                    int monosample = (int)(samples[i][j]* ((float)Math.Pow(2, waveformat.BitsPerSample)));
+                    int monosample = (int)(samples[i][j] * ((float)Math.Pow(2, waveformat.BitsPerSample)));
                     //int k = waveformat.BitsPerSample / 8; k > 0; k--
                     for (int k = 0; k < waveformat.BlockAlign / waveformat.Channels; k++)
                     {
@@ -497,7 +627,7 @@ namespace Delay
             return (float)Math.Sqrt(avgLevel / samples.Length);
         }
 
-        private double dBFS (float level)
+        private double dBFS(float level)
         {
             return 20 * Math.Log10((double)level);
         }
@@ -505,11 +635,24 @@ namespace Delay
         private void btnDump_Click(object sender, EventArgs e)
         {
             input.StopRecording();
-            output.Pause();
-            
-            buffer.ClearBuffer();
-            
-            
+
+            int tempbufferbytes;
+
+            if (curdelay > dumpMs && dumps > 1)
+            {
+                tempbufferbytes = buffer.BufferedBytes - ((waveformat.AverageBytesPerSecond * (targetMs / 1000) / dumps));//* (dumps - 1) / dumps / waveformat.BlockAlign * waveformat.BlockAlign;
+                var tempbuffer = new byte[buffer.BufferedBytes];
+
+                tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
+
+                buffer.ClearBuffer();
+
+                buffer.AddSamples(tempbuffer, 0, tempbufferbytes);
+            }
+            else
+            {
+                buffer.ClearBuffer();
+            }
 
 
             curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
@@ -526,6 +669,7 @@ namespace Delay
         private void numericUpDown3_ValueChanged(object sender, EventArgs e)
         {
             dumpMs = (int)(targetMs / txtDumps.Value);
+            dumps = (int)txtDumps.Value;
         }
 
         private void btnCough_MouseDown(object sender, EventArgs e)
@@ -537,7 +681,7 @@ namespace Delay
         {
             input.StartRecording();
             btnCough.BackColor = Color.DarkBlue;
-            if(targetRampedUp && curdelay < targetMs)
+            if (targetRampedUp && curdelay < targetMs)
             {
                 rampingup = true;
             }
@@ -548,40 +692,51 @@ namespace Delay
             if (!(rampingup || rampingdown))
             {
                 realRampFactor = (int)numericUpDown1.Value;
+                if (realRampFactor < 1)
+                {
+                    realRampFactor = 1;
+                    smoothRampEnabled = false;
+                }
+                else
+                {
+                    smoothRampEnabled = true;
+                }
             }
             else
             {
                 smoothchange = true;
             }
-            
+
 
         }
 
+        public float[][] LowPass(float[][] source, double Frequency, int SampleRate, double Q)
+        {
+            for (int ch = 0; ch < source.Length; ch++)
+            {
+                filter[ch].SetLowPassFilter(SampleRate, (float)Frequency, (float)Q);
+                for (int i = 0; i < source[ch].Length; i++)
+                {
+                    source[ch][i] = filter[ch].Transform(source[ch][i]);
+                }
+            }
+            return source;
+        }
 
-        public byte[] LowPass(byte[] source, double frequency, WaveFormat waveformat)
+        public float[][] LowPass(float[][] input, double Frequency, int SampleRate)
+        {
+            return LowPass(input, Frequency, SampleRate, Q);
+        }
+        public byte[] LowPass(byte[] source, double Frequency, WaveFormat waveformat, double Q)
         {
             var sourceSamples = BytesToSamples(source, waveformat);
-            for (int i = 0; i < sourceSamples.Length; i++)
-            {
-                sourceSamples[i] = LowPass(sourceSamples[i], frequency, waveformat.SampleRate);
-            }
+            LowPass(sourceSamples, Frequency, waveformat.SampleRate, Q);
             return SamplesToBytes(sourceSamples, waveformat);
         }
 
-
-        public float[] LowPass(float[] input, double frequency, int samplerate)
+        public byte[] LowPass(byte[] source, double Frequency, WaveFormat waveformat)
         {
-            double RC = 1 / (frequency * 2 * Math.PI);
-            double dt = (double)1 / samplerate;
-            double alpha = dt / (RC + dt);
-            float[] output = new float[input.Length];
-            output[0] = input[0];
-            for (int i = 1; i < input.Length; i++)
-            {
-                output[i] = (float)(output[i - 1] + (alpha * (input[i] - output[i - 1])));
-            }
-            return output;
+            return LowPass(source, Frequency, waveformat, Q);
         }
-
     }
 }
