@@ -424,6 +424,10 @@ namespace Delay
             {
                 output.Pause();
                 quickramp = true;
+                if(almostDoneRampingUp)
+                {
+                    realRampSpeed = 0;
+                }
             }
             rampingup = true;
         }
