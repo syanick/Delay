@@ -54,6 +54,10 @@
             this.lblDebug1 = new System.Windows.Forms.Label();
             this.lblDebug2 = new System.Windows.Forms.Label();
             this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.btnForever = new System.Windows.Forms.Button();
+            this.btnPause = new System.Windows.Forms.Button();
+            this.btnHold = new System.Windows.Forms.Button();
+            this.btnRampStop = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
@@ -180,7 +184,7 @@
             // 
             this.inputSelector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.inputSelector.FormattingEnabled = true;
-            this.inputSelector.Location = new System.Drawing.Point(86, 332);
+            this.inputSelector.Location = new System.Drawing.Point(83, 408);
             this.inputSelector.Name = "inputSelector";
             this.inputSelector.Size = new System.Drawing.Size(262, 21);
             this.inputSelector.TabIndex = 9;
@@ -190,7 +194,7 @@
             // 
             this.outputSelector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.outputSelector.FormattingEnabled = true;
-            this.outputSelector.Location = new System.Drawing.Point(86, 360);
+            this.outputSelector.Location = new System.Drawing.Point(83, 436);
             this.outputSelector.Name = "outputSelector";
             this.outputSelector.Size = new System.Drawing.Size(262, 21);
             this.outputSelector.TabIndex = 10;
@@ -199,7 +203,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(49, 335);
+            this.label4.Location = new System.Drawing.Point(46, 411);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(31, 13);
             this.label4.TabIndex = 11;
@@ -208,7 +212,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(41, 363);
+            this.label5.Location = new System.Drawing.Point(38, 439);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(39, 13);
             this.label5.TabIndex = 12;
@@ -222,7 +226,7 @@
             // txtDumps
             // 
             this.txtDumps.Cursor = System.Windows.Forms.Cursors.Default;
-            this.txtDumps.Location = new System.Drawing.Point(308, 306);
+            this.txtDumps.Location = new System.Drawing.Point(305, 382);
             this.txtDumps.Minimum = new decimal(new int[] {
             1,
             0,
@@ -241,7 +245,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(262, 308);
+            this.label3.Location = new System.Drawing.Point(259, 384);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(40, 13);
             this.label3.TabIndex = 14;
@@ -354,11 +358,59 @@
             this.timer2.Enabled = true;
             this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
+            // btnForever
+            // 
+            this.btnForever.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnForever.Location = new System.Drawing.Point(30, 306);
+            this.btnForever.Name = "btnForever";
+            this.btnForever.Size = new System.Drawing.Size(75, 64);
+            this.btnForever.TabIndex = 24;
+            this.btnForever.Text = "Ramp Forever";
+            this.btnForever.UseVisualStyleBackColor = false;
+            this.btnForever.Click += new System.EventHandler(this.BtnForever_Click);
+            // 
+            // btnPause
+            // 
+            this.btnPause.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPause.Location = new System.Drawing.Point(273, 306);
+            this.btnPause.Name = "btnPause";
+            this.btnPause.Size = new System.Drawing.Size(75, 64);
+            this.btnPause.TabIndex = 25;
+            this.btnPause.Text = "Pause";
+            this.btnPause.UseVisualStyleBackColor = false;
+            this.btnPause.Click += new System.EventHandler(this.BtnPause_Click);
+            // 
+            // btnHold
+            // 
+            this.btnHold.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnHold.Location = new System.Drawing.Point(192, 306);
+            this.btnHold.Name = "btnHold";
+            this.btnHold.Size = new System.Drawing.Size(75, 64);
+            this.btnHold.TabIndex = 26;
+            this.btnHold.Text = "Hold Cough";
+            this.btnHold.UseVisualStyleBackColor = false;
+            this.btnHold.Click += new System.EventHandler(this.BtnHold_Click);
+            // 
+            // btnRampStop
+            // 
+            this.btnRampStop.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRampStop.Location = new System.Drawing.Point(111, 306);
+            this.btnRampStop.Name = "btnRampStop";
+            this.btnRampStop.Size = new System.Drawing.Size(75, 64);
+            this.btnRampStop.TabIndex = 27;
+            this.btnRampStop.Text = "Ramp Stop";
+            this.btnRampStop.UseVisualStyleBackColor = false;
+            this.btnRampStop.Click += new System.EventHandler(this.BtnRampStop_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(383, 388);
+            this.ClientSize = new System.Drawing.Size(383, 482);
+            this.Controls.Add(this.btnRampStop);
+            this.Controls.Add(this.btnHold);
+            this.Controls.Add(this.btnPause);
+            this.Controls.Add(this.btnForever);
             this.Controls.Add(this.lblDebug2);
             this.Controls.Add(this.lblDebug1);
             this.Controls.Add(this.label7);
@@ -422,6 +474,10 @@
         private System.Windows.Forms.Label lblDebug1;
         private System.Windows.Forms.Label lblDebug2;
         private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.Button btnForever;
+        private System.Windows.Forms.Button btnPause;
+        private System.Windows.Forms.Button btnHold;
+        private System.Windows.Forms.Button btnRampStop;
     }
 }
 

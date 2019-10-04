@@ -37,6 +37,9 @@ namespace Delay
         bool almostDoneRampingUp = false;
         bool almostDoneRampingDown = false;
         int blinkInterval = 500;
+        bool rampForever = false;
+        bool pause = false;
+        bool holdCough = false;
 
 
         double Q = (1 / (double)2); // default Q value for low pass filter
@@ -144,7 +147,7 @@ namespace Delay
                 {
                     rampingup = false;
                     quickramp = false;
-                    if (output.PlaybackState == PlaybackState.Paused)
+                    if (output.PlaybackState == PlaybackState.Paused && !pause)
                     {
                         output.Play();
                     }
@@ -206,6 +209,43 @@ namespace Delay
                 if (realRampSpeed == 0)
                 {
                     buffer.AddSamples(Stretch(e.Buffer, 1.00), 0, e.BytesRecorded);
+                    if(rampForever)
+                    {
+                        if (targetRampedUp)
+                        {
+                            targetRampedUp = false;
+                            //targetMs = output.DesiredLatency;
+                            rampingdown = true;
+                            rampingup = false;
+                            rampingup = false;
+                            quickramp = false;
+                            if (output.PlaybackState == PlaybackState.Paused && !pause)
+                            {
+                                output.Play();
+                            }
+                        }
+                        else
+                        {
+                            targetMs = (int)(txtTarget.Value * 1000);
+                            targetRampedUp = true;
+                            rampingdown = false;
+                            if (quickramp)
+                            {
+                                output.Play();
+                                quickramp = false;
+                            }
+                            else if (rampingup)
+                            {
+                                output.Pause();
+                                quickramp = true;
+                                if (almostDoneRampingUp)
+                                {
+                                    realRampSpeed = 0;
+                                }
+                            }
+                            rampingup = true;
+                        }
+                    }
                 }
                 else
                 {
@@ -237,7 +277,7 @@ namespace Delay
                 {
                     rampingup = false;
                     quickramp = false;
-                    if (output.PlaybackState == PlaybackState.Paused)
+                    if (output.PlaybackState == PlaybackState.Paused && !pause)
                     {
                         output.Play();
                     }
@@ -251,7 +291,7 @@ namespace Delay
             {
                 rampingdown = false;
             }
-            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp && output.PlaybackState != PlaybackState.Playing)
+            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp && output.PlaybackState != PlaybackState.Playing && !pause)
             {
                 output.Play();
             }
@@ -441,7 +481,7 @@ namespace Delay
             rampingup = false;
             rampingup = false;
             quickramp = false;
-            if (output.PlaybackState == PlaybackState.Paused)
+            if (output.PlaybackState == PlaybackState.Paused && !pause)
             {
                 output.Play();
             }
@@ -743,6 +783,60 @@ namespace Delay
             }
 
 
+        }
+
+        private void BtnForever_Click(object sender, EventArgs e)
+        {
+            if(rampForever)
+            {
+                rampForever = false;
+                btnForever.BackColor = SystemColors.Control;
+            }
+            else
+            {
+                rampForever = true;
+                btnForever.BackColor = Color.White;
+            }
+        }
+
+        private void BtnPause_Click(object sender, EventArgs e)
+        {
+            if(pause)
+            {
+                output.Play();
+                pause = false;
+                btnPause.BackColor = SystemColors.Control;
+            }
+            else
+            {
+                output.Pause();
+                pause = true;
+                btnPause.BackColor = Color.White;
+            }
+        }
+
+        private void BtnHold_Click(object sender, EventArgs e)
+        {
+            if(holdCough)
+            {
+                input.StartRecording();
+                holdCough = false;
+                btnHold.BackColor = SystemColors.Control;
+            }
+            else
+            {
+                input.StopRecording();
+                holdCough = true;
+                btnHold.BackColor = Color.White;
+            }
+        }
+
+        private void BtnRampStop_Click(object sender, EventArgs e)
+        {
+            almostDoneRampingDown = true;
+            almostDoneRampingUp = true;
+            rampingdown = false;
+            rampingup = false;
         }
     }
 }
