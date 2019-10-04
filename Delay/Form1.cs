@@ -837,6 +837,10 @@ namespace Delay
             almostDoneRampingUp = true;
             rampingdown = false;
             rampingup = false;
+            if(rampForever)
+            {
+                btnForever.PerformClick();
+            }
         }
     }
 }

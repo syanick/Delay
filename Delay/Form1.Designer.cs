@@ -372,7 +372,7 @@
             // btnPause
             // 
             this.btnPause.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPause.Location = new System.Drawing.Point(273, 306);
+            this.btnPause.Location = new System.Drawing.Point(111, 306);
             this.btnPause.Name = "btnPause";
             this.btnPause.Size = new System.Drawing.Size(75, 64);
             this.btnPause.TabIndex = 25;
@@ -394,7 +394,7 @@
             // btnRampStop
             // 
             this.btnRampStop.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRampStop.Location = new System.Drawing.Point(111, 306);
+            this.btnRampStop.Location = new System.Drawing.Point(273, 306);
             this.btnRampStop.Name = "btnRampStop";
             this.btnRampStop.Size = new System.Drawing.Size(75, 64);
             this.btnRampStop.TabIndex = 27;
