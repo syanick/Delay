@@ -58,6 +58,10 @@
             this.btnPause = new System.Windows.Forms.Button();
             this.btnHold = new System.Windows.Forms.Button();
             this.btnRampStop = new System.Windows.Forms.Button();
+            this.btnBypass = new System.Windows.Forms.Button();
+            this.btnCrashRamp = new System.Windows.Forms.Button();
+            this.btnSetTarget = new System.Windows.Forms.Button();
+            this.btnSetSmooth = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
@@ -184,7 +188,7 @@
             // 
             this.inputSelector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.inputSelector.FormattingEnabled = true;
-            this.inputSelector.Location = new System.Drawing.Point(83, 408);
+            this.inputSelector.Location = new System.Drawing.Point(83, 472);
             this.inputSelector.Name = "inputSelector";
             this.inputSelector.Size = new System.Drawing.Size(262, 21);
             this.inputSelector.TabIndex = 9;
@@ -194,7 +198,7 @@
             // 
             this.outputSelector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.outputSelector.FormattingEnabled = true;
-            this.outputSelector.Location = new System.Drawing.Point(83, 436);
+            this.outputSelector.Location = new System.Drawing.Point(83, 500);
             this.outputSelector.Name = "outputSelector";
             this.outputSelector.Size = new System.Drawing.Size(262, 21);
             this.outputSelector.TabIndex = 10;
@@ -203,7 +207,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(46, 411);
+            this.label4.Location = new System.Drawing.Point(46, 475);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(31, 13);
             this.label4.TabIndex = 11;
@@ -212,7 +216,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(38, 439);
+            this.label5.Location = new System.Drawing.Point(38, 503);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(39, 13);
             this.label5.TabIndex = 12;
@@ -226,7 +230,7 @@
             // txtDumps
             // 
             this.txtDumps.Cursor = System.Windows.Forms.Cursors.Default;
-            this.txtDumps.Location = new System.Drawing.Point(305, 382);
+            this.txtDumps.Location = new System.Drawing.Point(305, 446);
             this.txtDumps.Minimum = new decimal(new int[] {
             1,
             0,
@@ -245,7 +249,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(259, 384);
+            this.label3.Location = new System.Drawing.Point(259, 448);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(40, 13);
             this.label3.TabIndex = 14;
@@ -361,7 +365,7 @@
             // btnForever
             // 
             this.btnForever.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnForever.Location = new System.Drawing.Point(30, 306);
+            this.btnForever.Location = new System.Drawing.Point(30, 376);
             this.btnForever.Name = "btnForever";
             this.btnForever.Size = new System.Drawing.Size(75, 64);
             this.btnForever.TabIndex = 24;
@@ -372,7 +376,7 @@
             // btnPause
             // 
             this.btnPause.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPause.Location = new System.Drawing.Point(111, 306);
+            this.btnPause.Location = new System.Drawing.Point(30, 306);
             this.btnPause.Name = "btnPause";
             this.btnPause.Size = new System.Drawing.Size(75, 64);
             this.btnPause.TabIndex = 25;
@@ -394,19 +398,67 @@
             // btnRampStop
             // 
             this.btnRampStop.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRampStop.Location = new System.Drawing.Point(273, 306);
+            this.btnRampStop.Location = new System.Drawing.Point(111, 376);
             this.btnRampStop.Name = "btnRampStop";
             this.btnRampStop.Size = new System.Drawing.Size(75, 64);
             this.btnRampStop.TabIndex = 27;
-            this.btnRampStop.Text = "Ramp Stop";
+            this.btnRampStop.Text = "Stop Ramp";
             this.btnRampStop.UseVisualStyleBackColor = false;
             this.btnRampStop.Click += new System.EventHandler(this.BtnRampStop_Click);
+            // 
+            // btnBypass
+            // 
+            this.btnBypass.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnBypass.Location = new System.Drawing.Point(273, 306);
+            this.btnBypass.Name = "btnBypass";
+            this.btnBypass.Size = new System.Drawing.Size(75, 64);
+            this.btnBypass.TabIndex = 28;
+            this.btnBypass.Text = "Bypass";
+            this.btnBypass.UseVisualStyleBackColor = false;
+            this.btnBypass.Click += new System.EventHandler(this.BtnBypass_Click);
+            // 
+            // btnCrashRamp
+            // 
+            this.btnCrashRamp.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCrashRamp.Location = new System.Drawing.Point(192, 376);
+            this.btnCrashRamp.Name = "btnCrashRamp";
+            this.btnCrashRamp.Size = new System.Drawing.Size(75, 64);
+            this.btnCrashRamp.TabIndex = 29;
+            this.btnCrashRamp.Text = "Crash Ramp";
+            this.btnCrashRamp.UseVisualStyleBackColor = false;
+            this.btnCrashRamp.Click += new System.EventHandler(this.BtnCrashRamp_Click);
+            // 
+            // btnSetTarget
+            // 
+            this.btnSetTarget.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSetTarget.Location = new System.Drawing.Point(111, 306);
+            this.btnSetTarget.Name = "btnSetTarget";
+            this.btnSetTarget.Size = new System.Drawing.Size(75, 64);
+            this.btnSetTarget.TabIndex = 30;
+            this.btnSetTarget.Text = "Set Target";
+            this.btnSetTarget.UseVisualStyleBackColor = false;
+            this.btnSetTarget.Click += new System.EventHandler(this.BtnSetTarget_Click);
+            // 
+            // btnSetSmooth
+            // 
+            this.btnSetSmooth.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSetSmooth.Location = new System.Drawing.Point(273, 376);
+            this.btnSetSmooth.Name = "btnSetSmooth";
+            this.btnSetSmooth.Size = new System.Drawing.Size(75, 64);
+            this.btnSetSmooth.TabIndex = 31;
+            this.btnSetSmooth.Text = "Set Smooth";
+            this.btnSetSmooth.UseVisualStyleBackColor = false;
+            this.btnSetSmooth.Click += new System.EventHandler(this.BtnSetSmooth_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(383, 482);
+            this.ClientSize = new System.Drawing.Size(383, 537);
+            this.Controls.Add(this.btnSetSmooth);
+            this.Controls.Add(this.btnSetTarget);
+            this.Controls.Add(this.btnCrashRamp);
+            this.Controls.Add(this.btnBypass);
             this.Controls.Add(this.btnRampStop);
             this.Controls.Add(this.btnHold);
             this.Controls.Add(this.btnPause);
@@ -478,6 +530,10 @@
         private System.Windows.Forms.Button btnPause;
         private System.Windows.Forms.Button btnHold;
         private System.Windows.Forms.Button btnRampStop;
+        private System.Windows.Forms.Button btnBypass;
+        private System.Windows.Forms.Button btnCrashRamp;
+        private System.Windows.Forms.Button btnSetTarget;
+        private System.Windows.Forms.Button btnSetSmooth;
     }
 }
 

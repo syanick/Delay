@@ -851,5 +851,66 @@ namespace Delay
                 btnForever.PerformClick();
             }
         }
+
+        private void BtnBypass_Click(object sender, EventArgs e)
+        {
+            buffer.ClearBuffer();
+            realRampSpeed = 0;
+            rampingdown = false;
+            rampingup = false;
+            if (rampForever)
+            {
+                btnForever.PerformClick();
+            }
+            if (holdCough)
+            {
+                input.StartRecording();
+                holdCough = false;
+                btnHold.BackColor = SystemColors.Control;
+            }
+            if (pause)
+            {
+                output.Play();
+                pause = false;
+                btnPause.BackColor = SystemColors.Control;
+            }
+        }
+
+        private void BtnCrashRamp_Click(object sender, EventArgs e)
+        {
+            realRampSpeed = 0;
+            rampingdown = false;
+            rampingup = false;
+            if (rampForever)
+            {
+                btnForever.PerformClick();
+            }
+        }
+
+        private void BtnSetTarget_Click(object sender, EventArgs e)
+        {
+            targetMs = (int)buffer.BufferedDuration.TotalMilliseconds / 1000;
+            txtTarget.Value = (decimal)buffer.BufferedDuration.TotalMilliseconds / 1000;
+        }
+
+        private void BtnSetSmooth_Click(object sender, EventArgs e)
+        {
+            int oldFactor = realRampFactor;
+            int oldSpeed = realRampSpeed;
+
+            if (numericUpDown1.Value < 1)
+            {
+                realRampSpeed = rampSpeed;
+                realRampFactor = 1;
+                smoothRampEnabled = false;
+            }
+            else
+            {
+                realRampSpeed = oldSpeed * (int)numericUpDown1.Value / oldFactor;
+                realRampFactor = (int)numericUpDown1.Value;
+                smoothRampEnabled = true;
+            }
+            smoothchange = false;
+        }
     }
 }
