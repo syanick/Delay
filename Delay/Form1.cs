@@ -37,6 +37,7 @@ namespace Delay
         bool almostDoneRampingUp = false;
         bool almostDoneRampingDown = false;
         int blinkInterval = 500;
+        bool recording = false;
 
 
         double Q = (1 / (double)2); // default Q value for low pass filter
@@ -95,6 +96,7 @@ namespace Delay
             try
             {
                 input.StartRecording();
+                recording = true;
             }
             catch
             {
@@ -206,6 +208,7 @@ namespace Delay
                 if (realRampSpeed == 0)
                 {
                     buffer.AddSamples(Stretch(e.Buffer, 1.00), 0, e.BytesRecorded);
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 }
                 else
                 {
@@ -279,7 +282,10 @@ namespace Delay
 
             if (buffer.BufferedBytes >= 0)
             {
-                //curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                if (!recording)
+                {
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                }
             }
             else
             {
@@ -603,6 +609,7 @@ namespace Delay
         private void btnDump_Click(object sender, EventArgs e)
         {
             input.StopRecording();
+            recording = false;
 
             int tempbufferbytes;
 
@@ -643,11 +650,13 @@ namespace Delay
         private void btnCough_MouseDown(object sender, EventArgs e)
         {
             input.StopRecording();
+            recording = false;
             btnCough.BackColor = Color.Blue;
         }
         private void btnCough_MouseUp(object sender, EventArgs e)
         {
             input.StartRecording();
+            recording = true;
             btnCough.BackColor = Color.DarkBlue;
             if (targetRampedUp && curdelay < targetMs)
             {
