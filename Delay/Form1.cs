@@ -223,7 +223,18 @@ namespace Delay
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                     if(curdelay < 880000)
                     {
-                        realRampSpeed++;
+                        if (realRampSpeed < 100)
+                        {
+                            realRampSpeed++;
+                        }
+                        else if (realRampSpeed < 300)
+                        {
+                            realRampSpeed += 5;
+                        }
+                        else if(realRampSpeed < 4800)
+                        {
+                            realRampSpeed += 500;
+                        }
                     }
                     else
                     {
