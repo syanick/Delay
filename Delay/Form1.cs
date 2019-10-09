@@ -965,6 +965,8 @@ namespace Delay
         private void BtnUnplug_Click(object sender, EventArgs e)
         {
             unplug = true;
+            realRampFactor = 1;
+            numericUpDown1.Value = 1;
             rampingdown = false;
             rampingup = false;
             quickramp = false;
