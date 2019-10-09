@@ -235,6 +235,11 @@ namespace Delay
                         {
                             realRampSpeed += 500;
                         }
+                        else
+                        {
+                            input.StopRecording();
+                            holdCough = true;
+                        }
                     }
                     else
                     {
