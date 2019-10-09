@@ -42,6 +42,7 @@ namespace Delay
         bool pause = false;
         bool holdCough = false;
         bool unplug = false;
+        bool plugItIn = false;
 
 
         double Q = (1 / (double)2); // default Q value for low pass filter
@@ -250,6 +251,34 @@ namespace Delay
                         input.StopRecording();
                         holdCough = true;
                     }
+                }
+                else if (plugItIn)
+                {
+                    if (output.PlaybackState != PlaybackState.Playing)
+                    {
+                        output.Play();
+                    }
+
+                    if (realRampSpeed > 100)
+                    {
+                        realRampSpeed = 100;
+                    }
+                    else if(realRampSpeed > 50)
+                    {
+                        realRampSpeed -= 25;
+                    }
+                    else if(realRampSpeed > 10)
+                    {
+                        realRampSpeed -= 5;
+                    }
+                    else
+                    {
+                        plugItIn = false;
+                    }
+
+                    var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / 100.0)));
+                    buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 }
                 else if (realRampSpeed == 0)
                 {
@@ -906,6 +935,7 @@ namespace Delay
             rampingdown = false;
             rampingup = false;
             unplug = false;
+            plugItIn = false;
             if (rampForever)
             {
                 btnForever.PerformClick();
@@ -964,13 +994,31 @@ namespace Delay
 
         private void BtnUnplug_Click(object sender, EventArgs e)
         {
-            unplug = true;
-            realRampFactor = 1;
-            numericUpDown1.Value = 1;
-            rampingdown = false;
-            rampingup = false;
-            quickramp = false;
-            btnUnplug.BackColor = Color.White;
+            if(unplug)
+            {
+                unplug = false;
+                plugItIn = true;
+                btnUnplug.BackColor = SystemColors.Control;
+                buffer.ClearBuffer();
+
+                if (holdCough)
+                {
+                    holdCough = false;
+                    input.StartRecording();
+                }
+            }
+            else
+            {
+                unplug = true;
+                plugItIn = false;
+                realRampFactor = 1;
+                numericUpDown1.Value = 1;
+                rampingdown = false;
+                rampingup = false;
+                quickramp = false;
+                btnUnplug.BackColor = Color.White;
+            }
+
         }
     }
 }
