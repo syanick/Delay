@@ -227,11 +227,15 @@ namespace Delay
                         {
                             realRampSpeed++;
                         }
-                        else if (realRampSpeed < 300)
+                        else if (realRampSpeed < 250)
                         {
                             realRampSpeed += 5;
                         }
-                        else if(realRampSpeed < 4800)
+                        else if(realRampSpeed < 500)
+                        {
+                            realRampSpeed += 25;
+                        }
+                        else if(realRampSpeed < 5000)
                         {
                             realRampSpeed += 500;
                         }
