@@ -106,7 +106,7 @@
             // 
             this.txtSpeed.Location = new System.Drawing.Point(111, 40);
             this.txtSpeed.Maximum = new decimal(new int[] {
-            99,
+            200,
             0,
             0,
             0});
