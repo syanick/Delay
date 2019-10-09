@@ -218,7 +218,7 @@ namespace Delay
             {
                 if(unplug)
                 {
-                    var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))));
+                    var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / 100.0)));
                     buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                     if(curdelay < 880000)
