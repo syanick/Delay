@@ -168,7 +168,7 @@ namespace Delay
                 {
                     if ((realTarget - curdelay) < endRampTime && !almostDoneRampingDown)
                     {
-                        if (realRampSpeed > (-1 * rampSpeed * realRampFactor))
+                        if (realRampSpeed > (-1 * rampSpeed * realRampFactor) && realRampSpeed / realRampFactor > -99)
                             realRampSpeed--;
                         else if (realRampSpeed < (-1 * rampSpeed * realRampFactor))
                             realRampSpeed++;
@@ -195,7 +195,14 @@ namespace Delay
                 }
                 else
                 {
-                    realRampSpeed = -1 * rampSpeed;
+                    if(rampSpeed < 100)
+                    {
+                        realRampSpeed = -1 * rampSpeed;
+                    }
+                    else
+                    {
+                        realRampSpeed = -99;
+                    }
                 }
 
                 if ((curdelay <= targetMs && targetRampedUp) || curdelay <= output.DesiredLatency)
@@ -473,6 +480,10 @@ namespace Delay
 
             if (stretchfactor < 1)
             {
+                if(stretchfactor <= 0)
+                {
+                    stretchfactor = 0.01;
+                }
                 inputSamples = LowPass(inputSamples, waveformat.SampleRate / (2 / stretchfactor), waveformat.SampleRate);
             }
 
@@ -483,7 +494,7 @@ namespace Delay
                 for (int i = 1; i < outputSamples[c].Length - 1; i++)
                 {
                     double sampleTarget = (((double)(i * inputSamples[c].Length) / outputSamples[c].Length));
-                    if (sampleTarget % 1 == 0)
+                    if (sampleTarget % 1 == 0 || ((int)sampleTarget + 1) >= inputSamples[c].Length)
                     {
                         outputSamples[c][i] = inputSamples[c][(int)sampleTarget];
                     }
