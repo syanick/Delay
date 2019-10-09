@@ -41,6 +41,7 @@ namespace Delay
         bool rampForever = false;
         bool pause = false;
         bool holdCough = false;
+        bool unplug = false;
 
 
         double Q = (1 / (double)2); // default Q value for low pass filter
@@ -215,7 +216,22 @@ namespace Delay
             }
             else
             {
-                if (realRampSpeed == 0)
+                if(unplug)
+                {
+                    var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))));
+                    buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                    if(curdelay < 880000)
+                    {
+                        realRampSpeed++;
+                    }
+                    else
+                    {
+                        input.StopRecording();
+                        holdCough = true;
+                    }
+                }
+                else if (realRampSpeed == 0)
                 {
                     buffer.AddSamples(Stretch(e.Buffer, 1.00), 0, e.BytesRecorded);
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
@@ -869,6 +885,7 @@ namespace Delay
             realRampSpeed = 0;
             rampingdown = false;
             rampingup = false;
+            unplug = false;
             if (rampForever)
             {
                 btnForever.PerformClick();
@@ -885,6 +902,7 @@ namespace Delay
                 pause = false;
                 btnPause.BackColor = SystemColors.Control;
             }
+            btnUnplug.BackColor = SystemColors.Control;
         }
 
         private void BtnCrashRamp_Click(object sender, EventArgs e)
@@ -922,6 +940,15 @@ namespace Delay
                 smoothRampEnabled = true;
             }
             smoothchange = false;
+        }
+
+        private void BtnUnplug_Click(object sender, EventArgs e)
+        {
+            unplug = true;
+            rampingdown = false;
+            rampingup = false;
+            quickramp = false;
+            btnUnplug.BackColor = Color.White;
         }
     }
 }
