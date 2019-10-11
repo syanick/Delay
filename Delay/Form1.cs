@@ -735,7 +735,7 @@ namespace Delay
                 {
                     if (Math.Abs(samples[i][j]) > peakLevel)
                     {
-                        peakLevel = samples[i][j];
+                        peakLevel = Math.Abs(samples[i][j]);
                     }
                 }
             }
