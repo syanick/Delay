@@ -63,6 +63,8 @@
             this.btnSetTarget = new System.Windows.Forms.Button();
             this.btnSetSmooth = new System.Windows.Forms.Button();
             this.btnUnplug = new System.Windows.Forms.Button();
+            this.lblDebug3 = new System.Windows.Forms.Label();
+            this.lblDebug4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
@@ -289,11 +291,6 @@
             // txtThreshold
             // 
             this.txtThreshold.DecimalPlaces = 1;
-            this.txtThreshold.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
             this.txtThreshold.Location = new System.Drawing.Point(111, 66);
             this.txtThreshold.Maximum = new decimal(new int[] {
             0,
@@ -462,11 +459,31 @@
             this.btnUnplug.UseVisualStyleBackColor = false;
             this.btnUnplug.Click += new System.EventHandler(this.BtnUnplug_Click);
             // 
+            // lblDebug3
+            // 
+            this.lblDebug3.AutoSize = true;
+            this.lblDebug3.Location = new System.Drawing.Point(289, 13);
+            this.lblDebug3.Name = "lblDebug3";
+            this.lblDebug3.Size = new System.Drawing.Size(13, 13);
+            this.lblDebug3.TabIndex = 33;
+            this.lblDebug3.Text = "0";
+            // 
+            // lblDebug4
+            // 
+            this.lblDebug4.AutoSize = true;
+            this.lblDebug4.Location = new System.Drawing.Point(289, 40);
+            this.lblDebug4.Name = "lblDebug4";
+            this.lblDebug4.Size = new System.Drawing.Size(13, 13);
+            this.lblDebug4.TabIndex = 34;
+            this.lblDebug4.Text = "0";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(383, 604);
+            this.Controls.Add(this.lblDebug4);
+            this.Controls.Add(this.lblDebug3);
             this.Controls.Add(this.btnUnplug);
             this.Controls.Add(this.btnSetSmooth);
             this.Controls.Add(this.btnSetTarget);
@@ -549,6 +566,8 @@
         private System.Windows.Forms.Button btnSetTarget;
         private System.Windows.Forms.Button btnSetSmooth;
         private System.Windows.Forms.Button btnUnplug;
+        private System.Windows.Forms.Label lblDebug3;
+        private System.Windows.Forms.Label lblDebug4;
     }
 }
 
