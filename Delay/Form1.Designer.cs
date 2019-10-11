@@ -351,14 +351,13 @@
             this.timer2.Enabled = true;
             this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
-            // 
             // lblDebug3
             // 
             this.lblDebug3.AutoSize = true;
-            this.lblDebug3.Location = new System.Drawing.Point(289, 13);
+            this.lblDebug3.Location = new System.Drawing.Point(289, 15);
             this.lblDebug3.Name = "lblDebug3";
             this.lblDebug3.Size = new System.Drawing.Size(13, 13);
-            this.lblDebug3.TabIndex = 33;
+            this.lblDebug3.TabIndex = 24;
             this.lblDebug3.Text = "0";
             // 
             // lblDebug4
@@ -367,7 +366,7 @@
             this.lblDebug4.Location = new System.Drawing.Point(289, 40);
             this.lblDebug4.Name = "lblDebug4";
             this.lblDebug4.Size = new System.Drawing.Size(13, 13);
-            this.lblDebug4.TabIndex = 34;
+            this.lblDebug4.TabIndex = 25;
             this.lblDebug4.Text = "0";
             // 
             // Form1
@@ -375,6 +374,8 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(383, 388);
+            this.Controls.Add(this.lblDebug4);
+            this.Controls.Add(this.lblDebug3);
             this.Controls.Add(this.lblDebug2);
             this.Controls.Add(this.lblDebug1);
             this.Controls.Add(this.label7);
@@ -400,7 +401,7 @@
             this.Controls.Add(this.label1);
             this.Name = "Form1";
             this.RightToLeftLayout = true;
-            this.Text = "@#$% Delay";
+            this.Text = "Delay";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).EndInit();
