@@ -54,6 +54,8 @@
             this.lblDebug1 = new System.Windows.Forms.Label();
             this.lblDebug2 = new System.Windows.Forms.Label();
             this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.lblDebug3 = new System.Windows.Forms.Label();
+            this.lblDebug4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
@@ -280,11 +282,6 @@
             // txtThreshold
             // 
             this.txtThreshold.DecimalPlaces = 1;
-            this.txtThreshold.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
             this.txtThreshold.Location = new System.Drawing.Point(111, 66);
             this.txtThreshold.Maximum = new decimal(new int[] {
             0,
@@ -354,6 +351,25 @@
             this.timer2.Enabled = true;
             this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
+            // 
+            // lblDebug3
+            // 
+            this.lblDebug3.AutoSize = true;
+            this.lblDebug3.Location = new System.Drawing.Point(289, 13);
+            this.lblDebug3.Name = "lblDebug3";
+            this.lblDebug3.Size = new System.Drawing.Size(13, 13);
+            this.lblDebug3.TabIndex = 33;
+            this.lblDebug3.Text = "0";
+            // 
+            // lblDebug4
+            // 
+            this.lblDebug4.AutoSize = true;
+            this.lblDebug4.Location = new System.Drawing.Point(289, 40);
+            this.lblDebug4.Name = "lblDebug4";
+            this.lblDebug4.Size = new System.Drawing.Size(13, 13);
+            this.lblDebug4.TabIndex = 34;
+            this.lblDebug4.Text = "0";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -383,7 +399,8 @@
             this.Controls.Add(this.txtTarget);
             this.Controls.Add(this.label1);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.RightToLeftLayout = true;
+            this.Text = "@#$% Delay";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).EndInit();
@@ -422,6 +439,8 @@
         private System.Windows.Forms.Label lblDebug1;
         private System.Windows.Forms.Label lblDebug2;
         private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.Label lblDebug3;
+        private System.Windows.Forms.Label lblDebug4;
     }
 }
 

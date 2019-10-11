@@ -38,6 +38,8 @@ namespace Delay
         bool almostDoneRampingDown = false;
         int blinkInterval = 500;
         bool recording = false;
+        double avgLevel;
+        double peakLevel;
 
 
         double Q = (1 / (double)2); // default Q value for low pass filter
@@ -286,6 +288,8 @@ namespace Delay
             double realRampSpeedPercent = 1.00 * realRampSpeed / realRampFactor;
             lblDebug1.Text = endRampTime.ToString();
             lblDebug2.Text = realRampSpeedPercent.ToString() + "%";
+            lblDebug3.Text = peakLevel.ToString("F") + " dB";
+            lblDebug4.Text = avgLevel.ToString("F") + " dB";
 
             if (buffer.BufferedBytes >= 0)
             {
@@ -470,14 +474,17 @@ namespace Delay
 
         private byte[] Stretch(byte[] inputbytes, double stretchfactor, double silenceThreshold)
         {
-            if (dBFS(AvgAudioLevel(inputbytes, waveformat)) > silenceThreshold)
+            float[][] inputSamples = BytesToSamples(inputbytes, waveformat);
+            float[][] outputSamples = new float[inputSamples.Length][];
+
+            avgLevel = 6 + dBFS(AvgAudioLevel(inputSamples));
+            peakLevel = 6 + dBFS(PeakAudioLevel(inputSamples));
+
+            if (avgLevel > silenceThreshold)
             {
                 stretchfactor = 1.00;
                 realRampSpeed = 0;
             }
-            float[][] inputSamples = BytesToSamples(inputbytes, waveformat);
-            float[][] outputSamples = new float[inputSamples.Length][];
-
             if (stretchfactor < 1)
             {
                 if(stretchfactor <= 0)
@@ -601,15 +608,33 @@ namespace Delay
             return bytes;
         }
 
-        private float AvgAudioLevel(byte[] buffer, WaveFormat waveformat)
+        private float AvgAudioLevel(float[][] samples)
         {
-            float[] samples = BytesToMonoSamples(buffer, waveformat);
             float avgLevel = 0;
             for (int i = 0; i < samples.Length; i++)
             {
-                avgLevel += samples[i] * samples[i];
+                for (int j = 0; j < samples[0].Length; j++)
+                {
+                    avgLevel += samples[i][j] * samples[i][j];
+                }
             }
-            return (float)Math.Sqrt(avgLevel / samples.Length);
+            return (float)Math.Sqrt(avgLevel / (samples.Length * samples[0].Length));
+        }
+
+        private float PeakAudioLevel(float[][] samples)
+        {
+            float peakLevel = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                for (int j = 0; j < samples[0].Length; j++)
+                {
+                    if (Math.Abs(samples[i][j]) > peakLevel)
+                    {
+                        peakLevel = samples[i][j];
+                    }
+                }
+            }
+            return peakLevel;
         }
 
         private double dBFS(float level)
