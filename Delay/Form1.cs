@@ -302,7 +302,7 @@ namespace Delay
             {
                 curdelay = 0;
             }
-            silenceThreshold = (double)txtThreshold.Value;
+            
             if (buffer != null)
             {
                 buffcumulative += curdelay;
@@ -789,6 +789,11 @@ namespace Delay
             }
 
 
+        }
+
+        private void TxtThreshold_ValueChanged(object sender, EventArgs e)
+        {
+            silenceThreshold = (double)txtThreshold.Value;
         }
     }
 }

@@ -296,6 +296,7 @@
             this.txtThreshold.Name = "txtThreshold";
             this.txtThreshold.Size = new System.Drawing.Size(75, 20);
             this.txtThreshold.TabIndex = 19;
+            this.txtThreshold.ValueChanged += new System.EventHandler(this.TxtThreshold_ValueChanged);
             // 
             // label6
             // 
