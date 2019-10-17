@@ -407,7 +407,7 @@ namespace Delay
             {
                 curdelay = 0;
             }
-            silenceThreshold = (double)txtThreshold.Value;
+            
             if (buffer != null)
             {
                 buffcumulative += curdelay;
@@ -582,8 +582,8 @@ namespace Delay
             float[][] inputSamples = BytesToSamples(inputbytes, waveformat);
             float[][] outputSamples = new float[inputSamples.Length][];
 
-            avgLevel = 6 + dBFS(AvgAudioLevel(inputSamples));
-            peakLevel = 6 + dBFS(PeakAudioLevel(inputSamples));
+            avgLevel = dBFS(AvgAudioLevel(inputSamples));
+            peakLevel = dBFS(PeakAudioLevel(inputSamples));
 
             if (avgLevel > silenceThreshold)
             {
@@ -662,7 +662,7 @@ namespace Delay
                     }
                     sample += monosample / waveformat.Channels;
                 }
-                samples[i] = sample / ((float)Math.Pow(2, waveformat.BitsPerSample));
+                samples[i] = sample / ((float)Math.Pow(2, waveformat.BitsPerSample - 1));
             }
             return samples;
         }
@@ -681,12 +681,12 @@ namespace Delay
                         monosample = monosample << 8;
                         monosample += buffer[(j * waveformat.BlockAlign) + (i * (waveformat.BlockAlign / waveformat.Channels)) + (k - 1)];
                     }
-                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2) - 1;
-                    if (monosample > maxint)
+                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2);
+                    if (monosample >= maxint)
                     {
-                        monosample = -1 - ((maxint + 1) - (monosample - maxint));
+                        monosample = 0 - (maxint - (monosample & (maxint-1)));
                     }
-                    channel[j] = monosample / ((float)Math.Pow(2, waveformat.BitsPerSample));
+                    channel[j] = monosample / (float)maxint;
                 }
                 samples[i] = channel;
             }
@@ -701,7 +701,8 @@ namespace Delay
             {
                 for (int j = 0; j < samples[0].Length; j++)
                 {
-                    int monosample = (int)(samples[i][j] * ((float)Math.Pow(2, waveformat.BitsPerSample)));
+                    int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2);
+                    int monosample = (int)(samples[i][j] * maxint);
                     //int k = waveformat.BitsPerSample / 8; k > 0; k--
                     for (int k = 0; k < waveformat.BlockAlign / waveformat.Channels; k++)
                     {
@@ -1044,6 +1045,9 @@ namespace Delay
                 btnUnplug.BackColor = Color.White;
             }
 
+        private void TxtThreshold_ValueChanged(object sender, EventArgs e)
+        {
+            silenceThreshold = (double)txtThreshold.Value;
         }
     }
 }
