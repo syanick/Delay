@@ -856,6 +856,7 @@ namespace Delay
             }
             else
             {
+                output.Pause();
                 buffer.ClearBuffer();
             }
 
@@ -885,7 +886,19 @@ namespace Delay
         }
         private void btnCough_MouseUp(object sender, EventArgs e)
         {
-            input.StartRecording();
+            stretcher.Clear();
+            if(curdelay < output.DesiredLatency)
+            {
+                output.Pause();
+            }
+            try
+            {
+                input.StartRecording();
+            }
+            catch
+            {
+
+            }
             recording = true;
             btnCough.BackColor = Color.DarkBlue;
             if (targetRampedUp && curdelay < targetMs)
