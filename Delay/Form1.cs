@@ -126,6 +126,10 @@ namespace Delay
             }
             else if (timeMode)
             {
+                if (realRampSpeed / realRampFactor > 99)
+                {
+                    realRampSpeed = realRampFactor * 99;
+                }
                 stretcher.Tempo = 1 - (realRampSpeed / realRampFactor / 100f);
                 float[] inbuffer = new float[e.Buffer.Length * waveformat.Channels / waveformat.BlockAlign];
                 inbuffer = BytesToSTSamples(e.Buffer, waveformat);
