@@ -735,6 +735,7 @@ namespace Delay
 
         private void btnDump_Click(object sender, EventArgs e)
         {
+            stretcher.Clear();
             input.StopRecording();
             recording = false;
 
@@ -754,6 +755,7 @@ namespace Delay
             else
             {
                 buffer.ClearBuffer();
+                output.Pause();
             }
 
 
@@ -782,6 +784,11 @@ namespace Delay
         }
         private void btnCough_MouseUp(object sender, EventArgs e)
         {
+            stretcher.Clear();
+            if (curdelay < output.DesiredLatency)
+            {
+                output.Pause();
+            }
             try
             {
                 input.StartRecording();
