@@ -491,6 +491,7 @@
             this.modeSelector.Name = "modeSelector";
             this.modeSelector.Size = new System.Drawing.Size(262, 21);
             this.modeSelector.TabIndex = 35;
+            this.modeSelector.SelectedIndexChanged += new System.EventHandler(this.ModeSelector_SelectedIndexChanged);
             // 
             // label8
             // 
