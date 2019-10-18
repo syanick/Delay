@@ -306,6 +306,10 @@ namespace Delay
                     buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 }
+                else if (buffavg < output.DesiredLatency)
+                {
+                    realRampSpeed = realRampFactor;
+                }
                 else if (realRampSpeed == 0)
                 {
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
