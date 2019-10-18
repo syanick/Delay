@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using NAudio.Wave;
 using NAudio.Dsp;
-
+using soundtouch;
 
 namespace Delay
 {
