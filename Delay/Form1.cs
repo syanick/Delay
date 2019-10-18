@@ -884,7 +884,8 @@ namespace Delay
 
         private void ModeSelector_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if(modeSelector.Text == "Pitch")
+            stretcher.Clear();
+            if (modeSelector.Text == "Pitch")
             {
                 pitchMode = true;
                 timeMode = false;
