@@ -13,6 +13,7 @@ namespace Delay
         BufferedWaveProvider buffer;
         WaveOutEvent output = new WaveOutEvent();
         WaveInEvent input = new WaveInEvent();
+        SoundTouch stretcher = new SoundTouch();
 
         TimeSpan timetoRamp;
 
@@ -40,7 +41,8 @@ namespace Delay
         bool recording = false;
         double avgLevel;
         double peakLevel;
-
+        bool pitchMode = false;
+        bool timeMode = true;
 
         double Q = (1 / (double)2); // default Q value for low pass filter
         BiQuadFilter[] filter;
@@ -71,6 +73,7 @@ namespace Delay
             numericUpDown1.Value = realRampFactor;
             txtThreshold.Value = Convert.ToDecimal(silenceThreshold);
             timer2.Interval = blinkInterval;
+            modeSelector.SelectedItem = "Time";
             InitializeAudio();
         }
 
@@ -104,14 +107,39 @@ namespace Delay
             {
 
             }
+
+            stretcher.Channels = (uint)input.WaveFormat.Channels;
+            stretcher.SampleRate = (uint)input.WaveFormat.SampleRate;
         }
 
         private void DataAvailable(object sender, WaveInEventArgs e)
         {
-            if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
+            if (pitchMode)
             {
                 var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
                 buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+            }
+            else if (timeMode)
+            {
+                stretcher.Tempo = 1 - (realRampSpeed / realRampFactor / 100f);
+                float[] inbuffer = new float[e.Buffer.Length * waveformat.Channels / waveformat.BlockAlign];
+                inbuffer = BytesToSTSamples(e.Buffer, waveformat);
+                stretcher.PutSamples(inbuffer, (uint)(e.Buffer.Length / waveformat.BlockAlign));
+                if (stretcher.AvailableSampleCount > 0)
+                {
+                    uint samplecount = stretcher.AvailableSampleCount;
+                    float[] outbuffer = new float[samplecount * waveformat.Channels];
+                    stretcher.ReceiveSamples(outbuffer, samplecount);
+                    buffer.AddSamples(SamplesToBytes(outbuffer, waveformat), 0, (int)samplecount * waveformat.BlockAlign);
+                }
+
+                avgLevel = dBFS(AvgAudioLevel(inbuffer));
+                peakLevel = dBFS(PeakAudioLevel(inbuffer));
+            }
+
+
+            if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
+            {
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 if (smoothRampEnabled)
                 {
@@ -158,8 +186,6 @@ namespace Delay
             else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
             {
                 //Ramp down to the target
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
-                buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                 curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
 
                 int realTarget = 0;
@@ -214,9 +240,12 @@ namespace Delay
             }
             else
             {
-                if (realRampSpeed == 0)
+                if(buffavg < output.DesiredLatency)
                 {
-                    buffer.AddSamples(Stretch(e.Buffer, 1.00), 0, e.BytesRecorded);
+                    realRampSpeed = realRampFactor;
+                }
+                else if (realRampSpeed == 0)
+                {
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 }
                 else
@@ -225,19 +254,19 @@ namespace Delay
                     {
                         if (curdelay > 200)
                         {
-                            var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
-                            buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                             if (realRampSpeed > 0)
                                 realRampSpeed--;
                             else if (realRampSpeed < 0)
                                 realRampSpeed++;
                         }
                         else
+                        {
                             realRampSpeed = 0;
+                        }
                     }
                     else
                     {
-                        realRampSpeed = 0;
+                            realRampSpeed = 0;
                     }
                 }
 
@@ -267,10 +296,6 @@ namespace Delay
             {
                 output.Play();
             }
-
-
-
-
         }
 
         private void outputSelector_SelectedIndexChanged(object sender, EventArgs e)
@@ -588,6 +613,27 @@ namespace Delay
             return samples;
         }
 
+        private float[] BytesToSTSamples(byte[] buffer, WaveFormat waveformat)
+        {
+            float[] samples = new float[waveformat.Channels * (buffer.Length / waveformat.BlockAlign)];
+            for (int j = 0; j < samples.Length; j++)
+            {
+                int monosample = 0;
+                for (int k = waveformat.BitsPerSample / 8; k > 0; k--)
+                {
+                    monosample = monosample << 8;
+                    monosample += buffer[(j * waveformat.BlockAlign / waveformat.Channels) + (k - 1)];
+                }
+                int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2);
+                if (monosample >= maxint)
+                {
+                    monosample = 0 - (maxint - (monosample & (maxint-1)));
+                }
+                samples[j] = monosample / (float)maxint;
+            }
+            return samples;
+        }
+
         private byte[] SamplesToBytes(float[][] samples, WaveFormat waveformat)
         {
             byte[] bytes = new byte[samples[0].Length * waveformat.BlockAlign];
@@ -609,6 +655,24 @@ namespace Delay
             return bytes;
         }
 
+        private byte[] SamplesToBytes(float[] samples, WaveFormat waveformat)
+        {
+            byte[] bytes = new byte[samples.Length * waveformat.BlockAlign / waveformat.Channels];
+
+            for (int j = 0; j < samples.Length; j++)
+            {
+                int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2);
+                int monosample = (int)(samples[j] * maxint);
+                //int k = waveformat.BitsPerSample / 8; k > 0; k--
+                for (int k = 0; k < waveformat.BlockAlign / waveformat.Channels; k++)
+                {
+                    bytes[(j * waveformat.BlockAlign / waveformat.Channels) + (k)] = (byte)(monosample);
+                    monosample = monosample >> 8;
+                }
+            }
+            return bytes;
+        }
+
         private float AvgAudioLevel(float[][] samples)
         {
             float avgLevel = 0;
@@ -622,6 +686,16 @@ namespace Delay
             return (float)Math.Sqrt(avgLevel / (samples.Length * samples[0].Length));
         }
 
+        private float AvgAudioLevel(float[] samples)
+        {
+            float avgLevel = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                avgLevel += samples[i] * samples[i];
+            }
+            return (float)Math.Sqrt(avgLevel / (samples.Length));
+        }
+
         private float PeakAudioLevel(float[][] samples)
         {
             float peakLevel = 0;
@@ -633,6 +707,18 @@ namespace Delay
                     {
                         peakLevel = Math.Abs(samples[i][j]);
                     }
+                }
+            }
+            return peakLevel;
+        }
+        private float PeakAudioLevel(float[] samples)
+        {
+            float peakLevel = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                if (Math.Abs(samples[i]) > peakLevel)
+                {
+                    peakLevel = Math.Abs(samples[i]);
                 }
             }
             return peakLevel;
@@ -794,6 +880,20 @@ namespace Delay
         private void TxtThreshold_ValueChanged(object sender, EventArgs e)
         {
             silenceThreshold = (double)txtThreshold.Value;
+        }
+
+        private void ModeSelector_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if(modeSelector.Text == "Pitch")
+            {
+                pitchMode = true;
+                timeMode = false;
+            }
+            else
+            {
+                pitchMode = false;
+                timeMode = true;
+            }
         }
     }
 }
