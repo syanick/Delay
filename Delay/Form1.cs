@@ -121,6 +121,10 @@ namespace Delay
             }
             else if (timeMode)
             {
+                if(realRampSpeed / realRampFactor > 99)
+                {
+                    realRampSpeed = realRampFactor * 99;
+                }
                 stretcher.Tempo = 1 - (realRampSpeed / realRampFactor / 100f);
                 float[] inbuffer = new float[e.Buffer.Length * waveformat.Channels / waveformat.BlockAlign];
                 inbuffer = BytesToSTSamples(e.Buffer, waveformat);
@@ -778,7 +782,14 @@ namespace Delay
         }
         private void btnCough_MouseUp(object sender, EventArgs e)
         {
-            input.StartRecording();
+            try
+            {
+                input.StartRecording();
+            }
+            catch
+            {
+
+            }
             recording = true;
             btnCough.BackColor = Color.DarkBlue;
             if (targetRampedUp && curdelay < targetMs)
