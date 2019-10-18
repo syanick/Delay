@@ -65,6 +65,8 @@
             this.btnUnplug = new System.Windows.Forms.Button();
             this.lblDebug3 = new System.Windows.Forms.Label();
             this.lblDebug4 = new System.Windows.Forms.Label();
+            this.modeSelector = new System.Windows.Forms.ComboBox();
+            this.label8 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarget)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtDumps)).BeginInit();
@@ -478,11 +480,34 @@
             this.lblDebug4.TabIndex = 34;
             this.lblDebug4.Text = "0";
             // 
+            // modeSelector
+            // 
+            this.modeSelector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.modeSelector.FormattingEnabled = true;
+            this.modeSelector.Items.AddRange(new object[] {
+            "Time",
+            "Pitch"});
+            this.modeSelector.Location = new System.Drawing.Point(86, 598);
+            this.modeSelector.Name = "modeSelector";
+            this.modeSelector.Size = new System.Drawing.Size(262, 21);
+            this.modeSelector.TabIndex = 35;
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(46, 601);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(34, 13);
+            this.label8.TabIndex = 36;
+            this.label8.Text = "Mode";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(383, 604);
+            this.ClientSize = new System.Drawing.Size(383, 631);
+            this.Controls.Add(this.label8);
+            this.Controls.Add(this.modeSelector);
             this.Controls.Add(this.lblDebug4);
             this.Controls.Add(this.lblDebug3);
             this.Controls.Add(this.btnUnplug);
@@ -569,6 +594,8 @@
         private System.Windows.Forms.Button btnUnplug;
         private System.Windows.Forms.Label lblDebug3;
         private System.Windows.Forms.Label lblDebug4;
+        private System.Windows.Forms.ComboBox modeSelector;
+        private System.Windows.Forms.Label label8;
     }
 }
 
