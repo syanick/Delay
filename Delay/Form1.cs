@@ -202,7 +202,7 @@ namespace Delay
                 }
                 else
                 {
-                    if(rampSpeed < 100)
+                    if (rampSpeed < 100)
                     {
                         realRampSpeed = -1 * rampSpeed;
                     }
@@ -219,12 +219,12 @@ namespace Delay
             }
             else
             {
-                if(unplug)
+                if (unplug)
                 {
                     var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / 100.0)));
                     buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                    if(curdelay < 880000)
+                    if (curdelay < 880000)
                     {
                         if (realRampSpeed < 100)
                         {
@@ -234,11 +234,11 @@ namespace Delay
                         {
                             realRampSpeed += 5;
                         }
-                        else if(realRampSpeed < 500)
+                        else if (realRampSpeed < 500)
                         {
                             realRampSpeed += 25;
                         }
-                        else if(realRampSpeed < 5000)
+                        else if (realRampSpeed < 5000)
                         {
                             realRampSpeed += 500;
                         }
@@ -265,11 +265,11 @@ namespace Delay
                     {
                         realRampSpeed = 100;
                     }
-                    else if(realRampSpeed > 50)
+                    else if (realRampSpeed > 50)
                     {
                         realRampSpeed -= 25;
                     }
-                    else if(realRampSpeed > 10)
+                    else if (realRampSpeed > 10)
                     {
                         realRampSpeed -= 5;
                     }
@@ -407,7 +407,7 @@ namespace Delay
             {
                 curdelay = 0;
             }
-            
+
             if (buffer != null)
             {
                 buffcumulative += curdelay;
@@ -434,7 +434,7 @@ namespace Delay
                 if (rampingdown)
                 {
                     //we are ramping down
-                    
+
                     if (!targetRampedUp)
                     {
                         timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - output.DesiredLatency) / (realRampSpeed / (100.0 * realRampFactor))));
@@ -449,7 +449,7 @@ namespace Delay
                 else if (rampingup)
                 {
                     //we are ramping up
-                    
+
                     timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
                     lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
@@ -547,7 +547,7 @@ namespace Delay
             {
                 output.Pause();
                 quickramp = true;
-                if(almostDoneRampingUp)
+                if (almostDoneRampingUp)
                 {
                     realRampSpeed = 0;
                 }
@@ -592,7 +592,7 @@ namespace Delay
             }
             if (stretchfactor < 1)
             {
-                if(stretchfactor <= 0)
+                if (stretchfactor <= 0)
                 {
                     stretchfactor = 0.01;
                 }
@@ -684,7 +684,7 @@ namespace Delay
                     int maxint = ((int)Math.Pow(2, waveformat.BitsPerSample) / 2);
                     if (monosample >= maxint)
                     {
-                        monosample = 0 - (maxint - (monosample & (maxint-1)));
+                        monosample = 0 - (maxint - (monosample & (maxint - 1)));
                     }
                     channel[j] = monosample / (float)maxint;
                 }
@@ -862,7 +862,7 @@ namespace Delay
 
         private void timer2_Tick(object sender, EventArgs e)
         {
-            
+
             if (rampingdown)
             {
                 btnBuild.BackColor = Color.DarkGreen;
@@ -898,7 +898,7 @@ namespace Delay
 
         private void BtnForever_Click(object sender, EventArgs e)
         {
-            if(rampForever)
+            if (rampForever)
             {
                 rampForever = false;
                 btnForever.BackColor = SystemColors.Control;
@@ -912,7 +912,7 @@ namespace Delay
 
         private void BtnPause_Click(object sender, EventArgs e)
         {
-            if(pause)
+            if (pause)
             {
                 output.Play();
                 pause = false;
@@ -928,7 +928,7 @@ namespace Delay
 
         private void BtnHold_Click(object sender, EventArgs e)
         {
-            if(holdCough)
+            if (holdCough)
             {
                 input.StartRecording();
                 holdCough = false;
@@ -948,7 +948,7 @@ namespace Delay
             almostDoneRampingUp = true;
             rampingdown = false;
             rampingup = false;
-            if(rampForever)
+            if (rampForever)
             {
                 btnForever.PerformClick();
             }
@@ -1020,7 +1020,7 @@ namespace Delay
 
         private void BtnUnplug_Click(object sender, EventArgs e)
         {
-            if(unplug)
+            if (unplug)
             {
                 unplug = false;
                 plugItIn = true;
@@ -1044,6 +1044,7 @@ namespace Delay
                 quickramp = false;
                 btnUnplug.BackColor = Color.White;
             }
+        }
 
         private void TxtThreshold_ValueChanged(object sender, EventArgs e)
         {
