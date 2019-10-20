@@ -32,6 +32,7 @@ namespace Delay
         bool quickramp = false;
         int realRampSpeed = 0;
         int realRampFactor = 1; //ramp ramp speed -- set higher for slower ramp ramp
+        float tempochange = 0;
         int endRampTime = 0;
         bool smoothchange = true;
         bool smoothRampEnabled = true;
@@ -126,11 +127,15 @@ namespace Delay
             }
             else if (timeMode)
             {
-                if (realRampSpeed / realRampFactor > 99)
+                tempochange = (float)Math.Abs(realRampSpeed) / (float)realRampFactor;
+                tempochange = (100f * tempochange) / (100f + tempochange);
+
+                if(realRampSpeed > 0)
                 {
-                    realRampSpeed = realRampFactor * 99;
+                    tempochange = -tempochange;
                 }
-                stretcher.Tempo = 1 - (realRampSpeed / realRampFactor / 100f);
+
+                stretcher.TempoChange = tempochange;
                 float[] inbuffer = new float[e.Buffer.Length * waveformat.Channels / waveformat.BlockAlign];
                 inbuffer = BytesToSTSamples(e.Buffer, waveformat);
                 stretcher.PutSamples(inbuffer, (uint)(e.Buffer.Length / waveformat.BlockAlign));
@@ -418,7 +423,8 @@ namespace Delay
         private void timer1_Tick(object sender, EventArgs e)
         {
             double realRampSpeedPercent = 1.00 * realRampSpeed / realRampFactor;
-            lblDebug1.Text = endRampTime.ToString();
+            //lblDebug1.Text = endRampTime.ToString();
+            lblDebug1.Text = tempochange.ToString();
             lblDebug2.Text = realRampSpeedPercent.ToString() + "%";
             lblDebug3.Text = peakLevel.ToString("F") + " dB";
             lblDebug4.Text = avgLevel.ToString("F") + " dB";
