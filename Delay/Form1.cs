@@ -127,13 +127,8 @@ namespace Delay
             }
             else if (timeMode)
             {
-                tempochange = (float)Math.Abs(realRampSpeed) / (float)realRampFactor;
-                tempochange = (100f * tempochange) / (100f + tempochange);
-
-                if(realRampSpeed > 0)
-                {
-                    tempochange = -tempochange;
-                }
+                tempochange = (float)realRampSpeed / (float)realRampFactor;
+                tempochange = -(100f * tempochange) / (100f + tempochange);
 
                 stretcher.TempoChange = tempochange;
                 float[] inbuffer = new float[e.Buffer.Length * waveformat.Channels / waveformat.BlockAlign];
