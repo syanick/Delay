@@ -839,6 +839,7 @@ namespace Delay
 
         private void btnDump_Click(object sender, EventArgs e)
         {
+            MouseEventArgs me = (MouseEventArgs)e;
             input.StopRecording();
             recording = false;
 
@@ -849,11 +850,22 @@ namespace Delay
                 tempbufferbytes = buffer.BufferedBytes - ((waveformat.AverageBytesPerSecond * (targetMs / 1000) / dumps));//* (dumps - 1) / dumps / waveformat.BlockAlign * waveformat.BlockAlign;
                 var tempbuffer = new byte[buffer.BufferedBytes];
 
-                tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
+                if(me.Button != System.Windows.Forms.MouseButtons.Right)
+                {
+                    tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
+                    buffer.ClearBuffer();
+                    buffer.AddSamples(tempbuffer, 0, tempbufferbytes);
+                }
+                else
+                {
+                    int tempoffset = (waveformat.AverageBytesPerSecond * (targetMs / 1000) / dumps);
+                    var tempbuffer2 = new byte[tempbufferbytes];
+                    buffer.Read(tempbuffer, 0, tempbuffer.Length);
+                    Buffer.BlockCopy(tempbuffer, tempoffset, tempbuffer2, 0, tempbufferbytes);
+                    buffer.ClearBuffer();
+                    buffer.AddSamples(tempbuffer2, 0, tempbufferbytes);
+                }
 
-                buffer.ClearBuffer();
-
-                buffer.AddSamples(tempbuffer, 0, tempbufferbytes);
             }
             else
             {
