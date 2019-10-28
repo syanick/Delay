@@ -11,6 +11,7 @@ namespace Delay
     {
         WaveFormat waveformat = new WaveFormat(44100, 16, 2);
         BufferedWaveProvider buffer;
+        BufferedWaveProvider repeatBuffer;
         WaveOutEvent output = new WaveOutEvent();
         WaveInEvent input = new WaveInEvent();
         SoundTouch stretcher = new SoundTouch();
@@ -49,6 +50,10 @@ namespace Delay
         double peakLevel;
         bool pitchMode = false;
         bool timeMode = true;
+        bool repeatMode = false;
+        bool repeating = false;
+        TimeSpan oneday = new TimeSpan(1, 0, 0, 0);
+        TimeSpan twodays = new TimeSpan(2, 0, 0, 0);
 
         double Q = (1 / (double)2); // default Q value for low pass filter
         BiQuadFilter[] filter;
@@ -72,7 +77,9 @@ namespace Delay
             }
             txtTarget.DecimalPlaces = 1;
             buffer = new BufferedWaveProvider(waveformat);
-            buffer.BufferDuration = new TimeSpan(0, 15, 0);
+            repeatBuffer = new BufferedWaveProvider(waveformat);
+            buffer.BufferDuration = new TimeSpan(1, 1, 0);
+            repeatBuffer.BufferDuration = new TimeSpan(1, 1, 0);
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
             dumpMs = (int)(targetMs / txtDumps.Value);
@@ -145,7 +152,36 @@ namespace Delay
                 avgLevel = dBFS(AvgAudioLevel(inbuffer));
                 peakLevel = dBFS(PeakAudioLevel(inbuffer));
             }
+            else if (repeatMode)
+            {
+                buffer.AddSamples(e.Buffer, 0, e.Buffer.Length);
+                if (rampingup)
+                {
+                    if (!repeating)
+                    {
+                        var tempbuffer = new byte[buffer.BufferedBytes];
+                        buffer.Read(tempbuffer, 0, buffer.BufferedBytes);
+                        repeatBuffer.AddSamples(tempbuffer, 0, tempbuffer.Length);
+                        repeating = true;
+                        output.Stop();
+                        output.Init(repeatBuffer);
+                        output.Play();
+                    }
+                    else
+                    {
+                        repeatBuffer.AddSamples(e.Buffer, 0, e.Buffer.Length);
+                    }
+                }
+                if (rampingdown)
+                {
+                    int tempbufferbytes = (waveformat.AverageBytesPerSecond * (targetMs / 1000));
+                    var tempbuffer = new byte[buffer.BufferedBytes];
 
+                    tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
+                    buffer.ClearBuffer();
+                    buffer.AddSamples(tempbuffer, 0, tempbufferbytes);
+                }
+            }
 
             if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
             {
@@ -310,6 +346,17 @@ namespace Delay
                     buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
                 }
+                else if (repeatMode)
+                {
+                    if (repeating)
+                    {
+                        repeating = false;
+                        output.Stop();
+                        output.Init(buffer);
+                        output.Play();
+                        repeatBuffer.ClearBuffer();
+                    }
+                }
                 else if (buffavg < output.DesiredLatency)
                 {
                     realRampSpeed = realRampFactor;
@@ -471,23 +518,35 @@ namespace Delay
                     {
                         timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((buffavg - targetMs) / (realRampSpeed / (100.0 * realRampFactor))));
                     }
-
-                    lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
                 else if (rampingup)
                 {
                     //we are ramping up
 
                     timetoRamp = new TimeSpan(0, 0, 0, 0, (int)((targetMs - buffavg) / (realRampSpeed / (100.0 * realRampFactor))));
-                    lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                 }
 
+                if (!repeatMode)
+                {
+                    if (timetoRamp >= twodays)
+                    {
+                        lblRampTimer.Text = (timetoRamp.ToString("%d") + " Days " + timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
+                    }
+                    else if (timetoRamp >= oneday)
+                    {
+                        lblRampTimer.Text = ("1 Day " + timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
+                    }
+                    else
+                    {
+                        lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
+                    }
+                }
             }
             else
             {
                 timetoRamp = new TimeSpan();
 
-                //lblRampTimer.Text = "";
+                lblRampTimer.Text = "";
                 if (smoothchange)
                 {
                     realRampFactor = (int)numericUpDown1.Value;
@@ -1177,11 +1236,19 @@ namespace Delay
             {
                 pitchMode = true;
                 timeMode = false;
+                repeatMode = false;
+            }
+            else if(modeSelector.Text == "Time")
+            {
+                pitchMode = false;
+                timeMode = true;
+                repeatMode = false;
             }
             else
             {
                 pitchMode = false;
-                timeMode = true;
+                timeMode = false;
+                repeatMode = true;
             }
         }
     }

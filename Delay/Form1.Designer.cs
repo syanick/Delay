@@ -86,14 +86,9 @@
             // txtTarget
             // 
             this.txtTarget.DecimalPlaces = 1;
-            this.txtTarget.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
             this.txtTarget.Location = new System.Drawing.Point(111, 13);
             this.txtTarget.Maximum = new decimal(new int[] {
-            864,
+            3600,
             0,
             0,
             0});
@@ -112,11 +107,6 @@
             this.txtSpeed.Location = new System.Drawing.Point(111, 40);
             this.txtSpeed.Maximum = new decimal(new int[] {
             200,
-            0,
-            0,
-            0});
-            this.txtSpeed.Minimum = new decimal(new int[] {
-            1,
             0,
             0,
             0});
@@ -486,7 +476,8 @@
             this.modeSelector.FormattingEnabled = true;
             this.modeSelector.Items.AddRange(new object[] {
             "Time",
-            "Pitch"});
+            "Pitch",
+            "Repeat"});
             this.modeSelector.Location = new System.Drawing.Point(86, 598);
             this.modeSelector.Name = "modeSelector";
             this.modeSelector.Size = new System.Drawing.Size(262, 21);
