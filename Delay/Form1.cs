@@ -541,6 +541,10 @@ namespace Delay
                         lblRampTimer.Text = (timetoRamp.ToString(@"h\:mm\:ss") + " Remaining");
                     }
                 }
+                else
+                {
+                    lblRampTimer.Text = "";
+                }
             }
             else
             {
@@ -630,7 +634,7 @@ namespace Delay
                 output.Play();
                 quickramp = false;
             }
-            else if (rampingup)
+            else if (rampingup && !repeatMode)
             {
                 output.Pause();
                 quickramp = true;
