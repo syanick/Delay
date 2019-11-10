@@ -12,8 +12,10 @@ namespace Delay
     {
         WaveFormat waveformat = new WaveFormat(44100, 16, 2);
         BufferedDelayProvider buffer;
+        BufferedDelayProvider evil;
         BufferedDelayProvider inputBuffer;
         WaveOutEvent output = new WaveOutEvent();
+        WaveOutEvent evilout = new WaveOutEvent();
         WaveInEvent input = new WaveInEvent();
         SoundTouch stretcher = new SoundTouch();
 
@@ -52,6 +54,7 @@ namespace Delay
         bool pitchMode = false;
         bool timeMode = true;
         bool repeatMode = false;
+        bool evilMode = false;
         bool repeating = false;
         TimeSpan oneday = new TimeSpan(1, 0, 0, 0);
         TimeSpan twodays = new TimeSpan(2, 0, 0, 0);
@@ -78,8 +81,10 @@ namespace Delay
             }
             txtTarget.DecimalPlaces = 1;
             buffer = new BufferedDelayProvider(waveformat);
+            evil = new BufferedDelayProvider(waveformat);
             inputBuffer = new BufferedDelayProvider(waveformat);
             buffer.BufferDuration = new TimeSpan(0, 0, 10);
+            evil.BufferDuration = new TimeSpan(0, 0, 10);
             inputBuffer.BufferDuration = new TimeSpan(1, 1, 0);
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
@@ -95,10 +100,13 @@ namespace Delay
         {
             input.Dispose();
             output.Dispose();
+            evilout.Dispose();
             output = new WaveOutEvent();
+            evilout = new WaveOutEvent();
             input = new WaveInEvent();
             input.DeviceNumber = inputSelector.SelectedIndex;
             output.DeviceNumber = outputSelector.SelectedIndex;
+            evilout.DeviceNumber = outputSelector.SelectedIndex;
 
 
             input.WaveFormat = waveformat;
@@ -112,6 +120,9 @@ namespace Delay
 
             output.Init(buffer);
             output.Pause();
+
+            evilout.Init(evil);
+
             try
             {
                 input.StartRecording();
@@ -163,9 +174,20 @@ namespace Delay
                 if (pitchMode)
                 {
                     var stretchedbuffer = Stretch(processit, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
-                    buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                    if (!evilMode)
+                    {
+                        buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                    }
+                    else
+                    {
+                        evil.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                        if(evil.BufferedDuration.TotalMilliseconds > 200 && evilout.PlaybackState != PlaybackState.Playing)
+                        {
+                            evilout.Play();
+                        }
+                    }
                 }
-                else if (timeMode)
+                if (timeMode)
                 {
                     tempochange = (float)realRampSpeed / (float)realRampFactor;
                     tempochange = -(100f * tempochange) / (100f + tempochange);
@@ -1292,18 +1314,33 @@ namespace Delay
                 pitchMode = true;
                 timeMode = false;
                 repeatMode = false;
+                evilMode = false;
             }
             else if(modeSelector.Text == "Time")
             {
                 pitchMode = false;
                 timeMode = true;
                 repeatMode = false;
+                evilMode = false;
             }
-            else
+            else if(modeSelector.Text == "Repeat")
             {
                 pitchMode = false;
                 timeMode = false;
                 repeatMode = true;
+                evilMode = false;
+            }
+            else if(modeSelector.Text == "Evil")
+            {
+                pitchMode = true;
+                timeMode = true;
+                repeatMode = false;
+                evilMode = true;
+            }
+
+            if (!evilMode)
+            {
+                evilout.Stop();
             }
         }
     }

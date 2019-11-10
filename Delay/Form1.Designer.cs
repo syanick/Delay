@@ -477,7 +477,8 @@
             this.modeSelector.Items.AddRange(new object[] {
             "Time",
             "Pitch",
-            "Repeat"});
+            "Repeat",
+            "Evil"});
             this.modeSelector.Location = new System.Drawing.Point(86, 598);
             this.modeSelector.Name = "modeSelector";
             this.modeSelector.Size = new System.Drawing.Size(262, 21);
