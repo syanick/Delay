@@ -51,6 +51,7 @@ namespace Delay
         bool plugItIn = false;
         double avgLevel;
         double peakLevel;
+        double bufferdiff;
         bool pitchMode = false;
         bool timeMode = true;
         bool repeatMode = false;
@@ -154,7 +155,7 @@ namespace Delay
                 output.Play();
             }
 
-            while (repeating || (inputBuffer.BufferedDuration.TotalMilliseconds > 300 && buffer.BufferedDuration.TotalMilliseconds < 300))
+            while (repeating || (inputBuffer.BufferedDuration.TotalMilliseconds > 200 && buffer.BufferedDuration.TotalMilliseconds < 300))
             {
                 int bytes = e.Buffer.Length;
                 //int bytes = waveformat.BlockAlign * (waveformat.SampleRate / 10);
@@ -181,9 +182,22 @@ namespace Delay
                     else
                     {
                         evil.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
-                        if(evil.BufferedDuration.TotalMilliseconds > 200 && evilout.PlaybackState != PlaybackState.Playing)
+                        if(evil.BufferedDuration.TotalMilliseconds > 250 && evilout.PlaybackState != PlaybackState.Playing)
                         {
                             evilout.Play();
+                        }
+
+                        double difference = evil.BufferedDuration.TotalMilliseconds - buffer.BufferedDuration.TotalMilliseconds;
+
+                        var blank = new byte[50 * waveformat.BlockAlign];
+                        if (difference > 200)
+                        {
+                            buffer.AddSamples(blank, 0, blank.Length);
+                        }
+                        else if(difference < 150)
+                        {
+                            evil.AddSamples(blank, 0, blank.Length);
+
                         }
                     }
                 }
@@ -302,7 +316,7 @@ namespace Delay
                         }
                     }
                 }
-                else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > (output.DesiredLatency * 2))
+                else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > (output.DesiredLatency + 200))
                 {
                     //Ramp down to the target
                     curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
@@ -321,7 +335,7 @@ namespace Delay
                                 realRampSpeed++;
 
 
-                            double tempEndRampTime = 0 - (2 * output.DesiredLatency);
+                            double tempEndRampTime = 0 - (200 + output.DesiredLatency);
                             if (targetRampedUp)
                                 tempEndRampTime = 0;
 
@@ -352,7 +366,7 @@ namespace Delay
                         }
                     }
 
-                    if ((curdelay <= targetMs && targetRampedUp) || curdelay <= (output.DesiredLatency * 2))
+                    if ((curdelay <= targetMs && targetRampedUp) || curdelay <= (output.DesiredLatency + 200))
                     {
                         rampingdown = false;
                     }
@@ -419,7 +433,7 @@ namespace Delay
                             repeating = false;
                         }
                     }
-                    else if (buffavg < (output.DesiredLatency* 2))
+                    else if (buffavg < 400)
                     {
                         realRampSpeed = realRampFactor;
                     }
