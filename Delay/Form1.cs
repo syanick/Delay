@@ -12,8 +12,7 @@ namespace Delay
     {
         WaveFormat waveformat = new WaveFormat(44100, 16, 2);
         BufferedDelayProvider buffer;
-        BufferedDelayProvider outbuffer;
-        BufferedDelayProvider repeatBuffer;
+        BufferedDelayProvider inputBuffer;
         WaveOutEvent output = new WaveOutEvent();
         WaveInEvent input = new WaveInEvent();
         SoundTouch stretcher = new SoundTouch();
@@ -79,11 +78,9 @@ namespace Delay
             }
             txtTarget.DecimalPlaces = 1;
             buffer = new BufferedDelayProvider(waveformat);
-            outbuffer = new BufferedDelayProvider(waveformat);
-            repeatBuffer = new BufferedDelayProvider(waveformat);
-            buffer.BufferDuration = new TimeSpan(1, 1, 0);
-            outbuffer.BufferDuration = new TimeSpan(0, 2, 0);
-            repeatBuffer.BufferDuration = new TimeSpan(1, 1, 0);
+            inputBuffer = new BufferedDelayProvider(waveformat);
+            buffer.BufferDuration = new TimeSpan(0, 0, 10);
+            inputBuffer.BufferDuration = new TimeSpan(1, 1, 0);
             inputSelector.SelectedIndex = 0;
             outputSelector.SelectedIndex = 0;
             dumpMs = (int)(targetMs / txtDumps.Value);
@@ -131,184 +128,241 @@ namespace Delay
 
         private void DataAvailable(object sender, WaveInEventArgs e)
         {
-            if (pitchMode)
-            {
-                var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
-                buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
-            }
-            else if (timeMode)
-            {
-                tempochange = (float)realRampSpeed / (float)realRampFactor;
-                tempochange = -(100f * tempochange) / (100f + tempochange);
+            inputBuffer.AddSamples(e.Buffer, 0, e.Buffer.Length);
+            curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
 
-                stretcher.TempoChange = tempochange;
-                float[] inbuffer = new float[e.Buffer.Length * waveformat.Channels / waveformat.BlockAlign];
-                inbuffer = BytesToSTSamples(e.Buffer, waveformat);
-                stretcher.PutSamples(inbuffer, (uint)(e.Buffer.Length / waveformat.BlockAlign));
-                if (stretcher.AvailableSampleCount > 0)
+            if (curdelay >= targetMs && quickramp)
+            {
+                rampingup = false;
+                quickramp = false;
+                realRampSpeed = 0;
+            }
+
+            if (output.PlaybackState == PlaybackState.Paused && !pause && !quickramp && buffer.BufferedDuration.TotalMilliseconds > 300)
+            {
+                output.Play();
+            }
+
+            while (repeating || (inputBuffer.BufferedDuration.TotalMilliseconds > 300 && buffer.BufferedDuration.TotalMilliseconds < 300))
+            {
+                int bytes = e.Buffer.Length;
+                //int bytes = waveformat.BlockAlign * (waveformat.SampleRate / 10);
+                
+                if(plugItIn || (realRampSpeed / realRampFactor) > 200)
                 {
-                    uint samplecount = stretcher.AvailableSampleCount;
-                    float[] outbuffer = new float[samplecount * waveformat.Channels];
-                    stretcher.ReceiveSamples(outbuffer, samplecount);
-                    buffer.AddSamples(SamplesToBytes(outbuffer, waveformat), 0, (int)samplecount * waveformat.BlockAlign);
+                    bytes = waveformat.BlockAlign * (waveformat.SampleRate / 100);
                 }
 
-                avgLevel = dBFS(AvgAudioLevel(inbuffer));
-                peakLevel = dBFS(PeakAudioLevel(inbuffer));
-            }
-            else if (repeatMode)
-            {
-                buffer.AddSamples(e.Buffer, 0, e.Buffer.Length);
-                if (rampingup)
+                byte[] processit = new byte[bytes];
+
+                if (!repeating)
                 {
-                    if (!repeating)
+                    inputBuffer.Read(processit, 0, bytes);
+                }
+
+                if (pitchMode)
+                {
+                    var stretchedbuffer = Stretch(processit, (1.00 + (realRampSpeed / (100.0 * realRampFactor))), silenceThreshold);
+                    buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
+                }
+                else if (timeMode)
+                {
+                    tempochange = (float)realRampSpeed / (float)realRampFactor;
+                    tempochange = -(100f * tempochange) / (100f + tempochange);
+
+                    stretcher.TempoChange = tempochange;
+                    float[] inbuffer = new float[bytes * waveformat.Channels / waveformat.BlockAlign];
+                    inbuffer = BytesToSTSamples(processit, waveformat);
+                    stretcher.PutSamples(inbuffer, (uint)(bytes / waveformat.BlockAlign));
+                    if (stretcher.AvailableSampleCount > 0)
                     {
-                        var tempbuffer = new byte[buffer.BufferedBytes];
-                        buffer.Read(tempbuffer, 0, buffer.BufferedBytes);
-                        repeatBuffer.AddSamples(tempbuffer, 0, tempbuffer.Length);
-                        repeating = true;
-                        output.Stop();
-                        output.Init(repeatBuffer);
-                        output.Play();
+                        uint samplecount = stretcher.AvailableSampleCount;
+                        float[] outbuffer = new float[samplecount * waveformat.Channels];
+                        stretcher.ReceiveSamples(outbuffer, samplecount);
+                        buffer.AddSamples(SamplesToBytes(outbuffer, waveformat), 0, (int)samplecount * waveformat.BlockAlign);
                     }
-                    else
-                    {
-                        repeatBuffer.AddSamples(e.Buffer, 0, e.Buffer.Length);
-                    }
+
+                    avgLevel = dBFS(AvgAudioLevel(inbuffer));
+                    peakLevel = dBFS(PeakAudioLevel(inbuffer));
                 }
-                if (rampingdown)
+                else if (repeatMode)
                 {
-                    int tempbufferbytes = (waveformat.AverageBytesPerSecond * (targetMs / 1000));
-                    var tempbuffer = new byte[buffer.BufferedBytes];
-
-                    tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
-                    buffer.ClearBuffer();
-                    buffer.AddSamples(tempbuffer, 0, tempbufferbytes);
-                }
-            }
-
-            if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
-            {
-                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                if (smoothRampEnabled)
-                {
-                    if ((targetMs - curdelay) > endRampTime && !almostDoneRampingUp)
+                    if (rampingup)
                     {
-                        if (realRampSpeed < (rampSpeed * realRampFactor))
-                            realRampSpeed++;
-                        else if (realRampSpeed > (rampSpeed * realRampFactor))
-                            realRampSpeed--;
-
-                        double tempEndRampTime = 0;
-                        for (int i = 0; i < realRampSpeed; i++)
+                        if (!repeating)
                         {
-                            tempEndRampTime += 1.000 * i / realRampFactor;
+                            repeating = true;
+
+                            if (inputBuffer.BufferedDuration.TotalMilliseconds > 500)
+                            {
+                                int copybytes = (waveformat.BlockAlign * ((waveformat.SampleRate / 100) * ((targetMs - (int)inputBuffer.BufferedDuration.TotalMilliseconds) - (int)buffer.BufferedDuration.TotalMilliseconds) / 10));
+                                int bufferbytes = inputBuffer.BufferedBytes;
+                                if(copybytes > bufferbytes)
+                                {
+                                    copybytes = bufferbytes;
+                                }
+                                var tempbuffer = new byte[bufferbytes];
+                                inputBuffer.Read(tempbuffer, 0, bufferbytes);
+                                inputBuffer.AddSamples(tempbuffer, 0, copybytes);
+                                inputBuffer.AddSamples(tempbuffer, 0, bufferbytes);
+                            }
+                            else
+                            {
+                                var tempbuffer = new byte[inputBuffer.BufferedBytes];
+                                inputBuffer.Read(tempbuffer, 0, tempbuffer.Length);
+                                buffer.AddSamples(tempbuffer, 0, tempbuffer.Length);
+                            }
                         }
-                        endRampTime = (int)tempEndRampTime;
-                    }
-                    else
-                    {
-                        if (realRampSpeed > realRampFactor)
-                            realRampSpeed--;
                         else
-                            realRampSpeed = realRampFactor;
-                        almostDoneRampingUp = true;
+                        {
+                            buffer.AddSamples(e.Buffer, 0, e.Buffer.Length);
+                        }
                     }
-                }
-                else
-                {
-                    realRampSpeed = rampSpeed;
-                }
-
-                //ramping = false;
-                if (curdelay >= targetMs)
-                {
-                    rampingup = false;
-                    quickramp = false;
-                    if (output.PlaybackState == PlaybackState.Paused && !pause)
+                    else if (rampingdown)
                     {
-                        output.Play();
-                    }
-                }
-            }
-
-            else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > output.DesiredLatency)
-            {
-                //Ramp down to the target
-                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-
-                int realTarget = 0;
-                if (targetRampedUp)
-                    realTarget = targetMs;
-
-                if (smoothRampEnabled)
-                {
-                    if ((realTarget - curdelay) < endRampTime && !almostDoneRampingDown)
-                    {
-                        if (realRampSpeed > (-1 * rampSpeed * realRampFactor) && realRampSpeed / realRampFactor > -99)
-                            realRampSpeed--;
-                        else if (realRampSpeed < (-1 * rampSpeed * realRampFactor))
-                            realRampSpeed++;
-
-
-                        double tempEndRampTime = 0 - output.DesiredLatency;
                         if (targetRampedUp)
-                            tempEndRampTime = 0;
-
-                        for (int i = 0; i > realRampSpeed; i--)
                         {
-                            tempEndRampTime += 1.000 * i / realRampFactor;
+                            int dumpbytes = waveformat.AverageBytesPerSecond * ((curdelay - targetMs) / 1000);
+                            inputBuffer.DumpEnd(dumpbytes);
                         }
-                        endRampTime = (int)tempEndRampTime;
+                        else
+                        {
+                            inputBuffer.ClearBuffer();
+                        }
                     }
                     else
                     {
-                        if (realRampSpeed < (-1 * realRampFactor))
-                            realRampSpeed++;
+                        buffer.AddSamples(processit, 0, bytes);
+                    }
+                }
+
+                if (targetRampedUp && rampingup && curdelay < targetMs && !quickramp)
+                {
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
+                    if (smoothRampEnabled)
+                    {
+                        if ((targetMs - curdelay) > endRampTime && !almostDoneRampingUp)
+                        {
+                            if (realRampSpeed < (rampSpeed * realRampFactor))
+                                realRampSpeed++;
+                            else if (realRampSpeed > (rampSpeed * realRampFactor))
+                                realRampSpeed--;
+
+                            double tempEndRampTime = 0;
+                            for (int i = 0; i < realRampSpeed; i++)
+                            {
+                                tempEndRampTime += 1.000 * i / realRampFactor;
+                            }
+                            endRampTime = (int)tempEndRampTime;
+                        }
                         else
-                            realRampSpeed = -1 * realRampFactor;
-                        almostDoneRampingDown = true;
+                        {
+                            if (realRampSpeed > realRampFactor)
+                                realRampSpeed--;
+                            else
+                                realRampSpeed = realRampFactor;
+                            almostDoneRampingUp = true;
+                        }
+                    }
+                    else
+                    {
+                        realRampSpeed = rampSpeed;
+                    }
+
+                    //ramping = false;
+                    if (curdelay >= targetMs)
+                    {
+                        rampingup = false;
+                        quickramp = false;
+                        if (output.PlaybackState == PlaybackState.Paused && !pause)
+                        {
+                            output.Play();
+                        }
+                    }
+                }
+                else if ((curdelay > targetMs || !targetRampedUp) && rampingdown && curdelay > (output.DesiredLatency * 2))
+                {
+                    //Ramp down to the target
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
+
+                    int realTarget = 0;
+                    if (targetRampedUp)
+                        realTarget = targetMs;
+
+                    if (smoothRampEnabled)
+                    {
+                        if ((realTarget - curdelay) < endRampTime && !almostDoneRampingDown)
+                        {
+                            if (realRampSpeed > (-1 * rampSpeed * realRampFactor) && realRampSpeed / realRampFactor > -99)
+                                realRampSpeed--;
+                            else if (realRampSpeed < (-1 * rampSpeed * realRampFactor))
+                                realRampSpeed++;
+
+
+                            double tempEndRampTime = 0 - (2 * output.DesiredLatency);
+                            if (targetRampedUp)
+                                tempEndRampTime = 0;
+
+                            for (int i = 0; i > realRampSpeed; i--)
+                            {
+                                tempEndRampTime += 1.000 * i / realRampFactor;
+                            }
+                            endRampTime = (int)tempEndRampTime;
+                        }
+                        else
+                        {
+                            if (realRampSpeed < (-1 * realRampFactor))
+                                realRampSpeed++;
+                            else
+                                realRampSpeed = -1 * realRampFactor;
+                            almostDoneRampingDown = true;
+                        }
+                    }
+                    else
+                    {
+                        if (rampSpeed < 100)
+                        {
+                            realRampSpeed = -1 * rampSpeed;
+                        }
+                        else
+                        {
+                            realRampSpeed = -99;
+                        }
+                    }
+
+                    if ((curdelay <= targetMs && targetRampedUp) || curdelay <= (output.DesiredLatency * 2))
+                    {
+                        rampingdown = false;
                     }
                 }
                 else
                 {
-                    if (rampSpeed < 100)
+                    if (unplug)
                     {
-                        realRampSpeed = -1 * rampSpeed;
-                    }
-                    else
-                    {
-                        realRampSpeed = -99;
-                    }
-                }
-
-                if ((curdelay <= targetMs && targetRampedUp) || curdelay <= output.DesiredLatency)
-                {
-                    rampingdown = false;
-                }
-            }
-            else
-            {
-                if (unplug)
-                {
-                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                    if (curdelay < 880000)
-                    {
-                        if (realRampSpeed < 100)
+                        curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
+                        if (curdelay < 880000)
                         {
-                            realRampSpeed++;
-                        }
-                        else if (realRampSpeed < 250)
-                        {
-                            realRampSpeed += 5;
-                        }
-                        else if (realRampSpeed < 500)
-                        {
-                            realRampSpeed += 25;
-                        }
-                        else if (realRampSpeed < 5000)
-                        {
-                            realRampSpeed += 500;
+                            if (realRampSpeed < 100)
+                            {
+                                realRampSpeed++;
+                            }
+                            else if (realRampSpeed < 250)
+                            {
+                                realRampSpeed += 5;
+                            }
+                            else if (realRampSpeed < 500)
+                            {
+                                realRampSpeed += 10;
+                            }
+                            else if (realRampSpeed < 10000)
+                            {
+                                realRampSpeed += 500;
+                            }
+                            else
+                            {
+                                input.StopRecording();
+                                holdCough = true;
+                            }
                         }
                         else
                         {
@@ -316,143 +370,131 @@ namespace Delay
                             holdCough = true;
                         }
                     }
-                    else
+                    else if (plugItIn)
                     {
-                        input.StopRecording();
-                        holdCough = true;
-                    }
-                }
-                else if (plugItIn)
-                {
-                    if (output.PlaybackState != PlaybackState.Playing)
-                    {
-                        output.Play();
-                    }
-
-                    if (realRampSpeed > 100)
-                    {
-                        realRampSpeed = 100;
-                    }
-                    else if (realRampSpeed > 50)
-                    {
-                        realRampSpeed -= 25;
-                    }
-                    else if (realRampSpeed > 10)
-                    {
-                        realRampSpeed -= 5;
-                    }
-                    else
-                    {
-                        plugItIn = false;
-                    }
-
-                    var stretchedbuffer = Stretch(e.Buffer, (1.00 + (realRampSpeed / 100.0)));
-                    buffer.AddSamples(stretchedbuffer, 0, stretchedbuffer.Length);
-                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                }
-                else if (repeatMode)
-                {
-                    if (repeating)
-                    {
-                        repeating = false;
-                        output.Stop();
-                        output.Init(buffer);
-                        output.Play();
-                        repeatBuffer.ClearBuffer();
-                    }
-                }
-                else if (buffavg < output.DesiredLatency)
-                {
-                    realRampSpeed = realRampFactor;
-                }
-                else if (realRampSpeed == 0)
-                {
-                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                    if (rampForever)
-                    {
-                        if (targetRampedUp)
+                        if (output.PlaybackState != PlaybackState.Playing)
                         {
-                            targetRampedUp = false;
-                            //targetMs = output.DesiredLatency;
-                            rampingdown = true;
-                            rampingup = false;
-                            rampingup = false;
-                            quickramp = false;
-                            if (output.PlaybackState == PlaybackState.Paused && !pause)
-                            {
-                                output.Play();
-                            }
+                            output.Play();
+                        }
+
+                        if (realRampSpeed > 90)
+                        {
+                            realRampSpeed = 90;
+                        }
+                        else if(realRampSpeed > 1)
+                        {
+                            realRampSpeed--;
                         }
                         else
                         {
-                            targetMs = (int)(txtTarget.Value * 1000);
-                            targetRampedUp = true;
-                            rampingdown = false;
-                            if (quickramp)
+                            plugItIn = false;
+                        }
+                    }
+                    else if (repeatMode)
+                    {
+                        if (repeating)
+                        {
+                            repeating = false;
+                        }
+                    }
+                    else if (buffavg < (output.DesiredLatency* 2))
+                    {
+                        realRampSpeed = realRampFactor;
+                    }
+                    else if (realRampSpeed == 0)
+                    {
+                        curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
+                        if (rampForever)
+                        {
+                            if (targetRampedUp)
                             {
-                                output.Play();
+                                targetRampedUp = false;
+                                //targetMs = output.DesiredLatency;
+                                rampingdown = true;
+                                rampingup = false;
+                                rampingup = false;
                                 quickramp = false;
-                            }
-                            else if (rampingup)
-                            {
-                                output.Pause();
-                                quickramp = true;
-                                if (almostDoneRampingUp)
+                                if (output.PlaybackState == PlaybackState.Paused && !pause)
                                 {
-                                    realRampSpeed = 0;
+                                    output.Play();
                                 }
                             }
-                            rampingup = true;
-                        }
-                    }
-                }
-                else
-                {
-                    if (smoothRampEnabled)
-                    {
-                        if (curdelay > 200)
-                        {
-                            if (realRampSpeed > 0)
-                                realRampSpeed--;
-                            else if (realRampSpeed < 0)
-                                realRampSpeed++;
-                        }
-                        else
-                        {
-                            realRampSpeed = 0;
+                            else
+                            {
+                                targetMs = (int)(txtTarget.Value * 1000);
+                                targetRampedUp = true;
+                                rampingdown = false;
+                                if (quickramp)
+                                {
+                                    output.Play();
+                                    quickramp = false;
+                                }
+                                else if (rampingup)
+                                {
+                                    output.Pause();
+                                    quickramp = true;
+                                    if (almostDoneRampingUp)
+                                    {
+                                        realRampSpeed = 0;
+                                    }
+                                }
+                                rampingup = true;
+                            }
                         }
                     }
                     else
                     {
-                            realRampSpeed = 0;
+                        if (smoothRampEnabled)
+                        {
+                            if (curdelay > 400)
+                            {
+                                if (realRampSpeed > 0)
+                                    realRampSpeed--;
+                                else if (realRampSpeed < 0)
+                                    realRampSpeed++;
+                            }
+                            else
+                            {
+                                realRampSpeed = 0;
+                            }
+                        }
+                        else
+                        {
+                                realRampSpeed = 0;
+                        }
+                    }
+
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
+                    endRampTime = 0;
+                    almostDoneRampingDown = false;
+                    almostDoneRampingUp = false;
+                    if (curdelay >= targetMs)
+                    {
+                        rampingup = false;
+                        quickramp = false;
+                        if (output.PlaybackState == PlaybackState.Paused && !pause)
+                        {
+                            output.Play();
+                        }
                     }
                 }
-
-                curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
-                endRampTime = 0;
-                almostDoneRampingDown = false;
-                almostDoneRampingUp = false;
-                if (curdelay >= targetMs)
+                if (targetRampedUp && curdelay >= targetMs)
                 {
                     rampingup = false;
-                    quickramp = false;
-                    if (output.PlaybackState == PlaybackState.Paused && !pause)
-                    {
-                        output.Play();
-                    }
                 }
-            }
-            if (targetRampedUp && curdelay >= targetMs)
-            {
-                rampingup = false;
-            }
-            else if ((curdelay <= targetMs && targetRampedUp) || curdelay <= output.DesiredLatency)
-            {
-                rampingdown = false;
-            }
-            if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp && output.PlaybackState != PlaybackState.Playing && !pause)
-            {
-                output.Play();
+                else if ((curdelay <= targetMs && targetRampedUp) || curdelay <= (output.DesiredLatency * 2))
+                {
+                    rampingdown = false;
+                }
+                if (buffer.BufferedDuration.TotalMilliseconds > output.DesiredLatency && !quickramp && output.PlaybackState != PlaybackState.Playing && !pause)
+                {
+                    output.Play();
+                }
+
+                if (repeating)
+                {
+                    break;
+                }
             }
         }
 
@@ -472,14 +514,16 @@ namespace Delay
             lblDebug1.Text = endRampTime.ToString();
             //lblDebug1.Text = tempochange.ToString();
             lblDebug2.Text = realRampSpeedPercent.ToString() + "%";
-            lblDebug3.Text = peakLevel.ToString("F") + " dB";
-            lblDebug4.Text = avgLevel.ToString("F") + " dB";
+            //lblDebug3.Text = peakLevel.ToString("F") + " dB";
+            //lblDebug4.Text = avgLevel.ToString("F") + " dB";
+            lblDebug3.Text = "input " + inputBuffer.BufferedDuration.TotalMilliseconds.ToString();
+            lblDebug4.Text = "output " + buffer.BufferedDuration.TotalMilliseconds.ToString();
 
             if (buffer.BufferedBytes >= 0)
             {
                 if (!recording)
                 {
-                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+                    curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
                 }
             }
             else
@@ -914,45 +958,37 @@ namespace Delay
         private void btnDump_Click(object sender, EventArgs e)
         {
             MouseEventArgs me = (MouseEventArgs)e;
-            input.StopRecording();
-            recording = false;
+            if (me.Button != System.Windows.Forms.MouseButtons.Right)
+            {
+                input.StopRecording();
+                recording = false;
+            }
 
-            //int tempbufferbytes;
             int dumpbytes;
 
             if (curdelay > dumpMs && dumps > 1)
             {
-                //tempbufferbytes = buffer.BufferedBytes - ((waveformat.AverageBytesPerSecond * (targetMs / 1000) / dumps));//* (dumps - 1) / dumps / waveformat.BlockAlign * waveformat.BlockAlign;
                 dumpbytes = (waveformat.AverageBytesPerSecond * (targetMs / 1000) / dumps);
-                //var tempbuffer = new byte[buffer.BufferedBytes];
 
                 if(me.Button != System.Windows.Forms.MouseButtons.Right)
                 {
-                    //tempbufferbytes = buffer.Read(tempbuffer, 0, tempbufferbytes);
-                    //buffer.ClearBuffer();
-                    //buffer.AddSamples(tempbuffer, 0, tempbufferbytes);
-                    buffer.Dump(dumpbytes);
+                    inputBuffer.Dump(dumpbytes);
                 }
                 else
                 {
-                    //int tempoffset = (waveformat.AverageBytesPerSecond * (targetMs / 1000) / dumps);
-                    //var tempbuffer2 = new byte[tempbufferbytes];
-                    //buffer.Read(tempbuffer, 0, tempbuffer.Length);
-                    //Buffer.BlockCopy(tempbuffer, tempoffset, tempbuffer2, 0, tempbufferbytes);
-                    //buffer.ClearBuffer();
-                    //buffer.AddSamples(tempbuffer2, 0, tempbufferbytes);
-                    buffer.DumpEnd(dumpbytes);
+                    inputBuffer.DumpEnd(dumpbytes);
                 }
 
             }
             else
             {
                 output.Pause();
+                inputBuffer.ClearBuffer();
                 buffer.ClearBuffer();
             }
 
 
-            curdelay = (int)buffer.BufferedDuration.TotalMilliseconds;
+            curdelay = (int)buffer.BufferedDuration.TotalMilliseconds + (int)inputBuffer.BufferedDuration.TotalMilliseconds;
             if (targetRampedUp && curdelay < targetMs)
             {
                 rampingup = true;
@@ -1148,7 +1184,7 @@ namespace Delay
 
         private void BtnBypass_Click(object sender, EventArgs e)
         {
-            buffer.ClearBuffer();
+            inputBuffer.ClearBuffer();
             realRampSpeed = 0;
             rampingdown = false;
             rampingup = false;
@@ -1221,8 +1257,8 @@ namespace Delay
                 unplug = false;
                 plugItIn = true;
                 btnUnplug.BackColor = SystemColors.Control;
+                inputBuffer.ClearBuffer();
                 buffer.ClearBuffer();
-                realRampSpeed = 100;
 
                 if (holdCough)
                 {
